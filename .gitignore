@@ -1,0 +1,23 @@
+# .gitignore for EC521 static-analysis project
+
+# Python / virtualenv
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Dataset and outputs
+samples/
+out/
+malicious-dataset/
+npm_extracted/
+tmp/
+*.zip
+*.tar.gz
+
+# Editor/OS files
+.DS_Store
+Thumbs.db
+*.swp
