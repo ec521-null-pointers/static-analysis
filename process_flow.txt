@@ -1,0 +1,123 @@
+semgrep --config ~/Documents/EC521/Grp\ Project/npm_static/rules/fast_artifacts.yml --no-git-ignore --max-target-bytes 50000000 --json --x-ignore-semgrepignore-files . > semgrep_secrets.json
+
+filter URL:
+rg -N --no-ignore -uu --line-number -o 'https?://[^\s"'"'"'()<>]+' bundle.js   | sort -u > urls_raw.txt
+Lists a set of URLs contained in the file, and then we can analyse the domain, if there is any anoamlies. we shld include some red flags like webhook.
+
+# 1️⃣ shell execution / spawning
+rg -n --hidden --no-ignore 'child_process\.(exec|spawn|execSync|fork)\(|require\(["'\'']child_process["'\'']\)\.' bundle.js \
+  > exec_spawn.txt
+
+# 2️⃣ npm publish / adduser / login / token
+rg -n --hidden --no-ignore '\bnpm (publish|adduser|login|token)\b' bundle.js \
+  > npm_publish.txt
+ If any return, suggests code logic that auto publishes.. red flag..
+
+# 3️⃣ environment tokens
+rg -n --hidden --no-ignore 'NPM_TOKEN|GITHUB_TOKEN|GIT_TOKEN|GITLAB_TOKEN|CI_JOB_TOKEN' bundle.js \
+  > env_tokens.txt
+
+# 4️⃣ registry / publish-related HTTP endpoints
+rg -n --hidden --no-ignore 'registry\.npmjs\.org|npmjs\.org|npmjs\.com|api\.npmjs\.org|/npm/' bundle.js \
+  > registry_endpoints.txt
+
+# 5️⃣ writing package.json or tarball creation
+rg -n --hidden --no-ignore 'write(File|FileSync|File\(|fs\.write(File|createWriteStream)|tar|pack|node-tar' bundle.js \
+  > write_package.txt
+
+# 6️⃣ base64 decode / eval / Function
+rg -n --hidden --no-ignore 'atob|btoa|Buffer\.from\(|base64|eval\(|Function\(|new Function' bundle.js \
+  > base64_eval.txt
+
+# 7️⃣ read/write .npmrc, .gitconfig, or SSH keys
+rg -n --hidden --no-ignore '\.npmrc|\.gitconfig|id_rsa|ssh-agent|SSH_AUTH_SOCK' bundle.js \
+  > config_ssh.txt
+
+rg -n -b -oP 'process\.env\.\K[A-Z0-9_]{3,}' bundle.js > env_vars_found.txt
+can be used for 2nd order processing on provider and capability map;. but probably shld print the context too..
+
+rg -n -b -oP '.{0,100}\b(verify|validate|introspect|jwks_uri|jwks|public[_-]?key|publicKey|jwt\.verify|jwt_decode|jsonwebtoken\.verify)\b.{0,100}' bundle.js   > token_validate_context.txt
+Can see where token validatin takes place... 1 might be normal CI, but too many should trigger increasing risk score.
+
+✅ 2-Layer Risk Scoring Framework for NPM Static Code Analysis
+
+This matches exactly the style used in malware sandboxes, supply-chain scanners, and modern SAST engines.
+
+Layer 1 — Raw Feature Extraction (binary signals)
+
+This is where your ripgrep / semgrep / rule-based detectors produce raw features.
+
+Each feature is just a boolean or count.
+
+Below is the exact mapping for your bundle.js extraction:
+
+Category A — Token Operations
+Feature	Meaning
+A1: token_acquire_count	number of “getToken / refresh_token / oauth2 exchange” operations
+A2: token_validate_count	number of verify / public-key checks
+A3: env_token_usage_count	usage of env vars like NPM_TOKEN / GITHUB_TOKEN
+A4: hardcoded_key_count	PEMs in bundle
+A5: base64_secret_encode	use of btoa/base64 to build Basic or Bearer secrets
+
+
+use of base64 encoding and decoding
+
+rg --no-filename --byte-offset -o \
+  'Buffer\.from\([^)]*["'\''"]base64["'\''"]|atob\(|Base64\.decode\(|base64Decoder|Decoder_SecretString' \
+  bundle.js \
+| while IFS=: read -r offset match; do
+    before=40; after=60
+    start=$(( offset > before ? offset - before : 0 ))
+    len=${#match}
+    count=$(( before + len + after ))
+    bytes=$(dd if=bundle.js bs=1 skip="$start" count="$count" 2>/dev/null)
+    marked=$(printf '%s' "$bytes" | sed "s/${match}/[[$match]]/")
+    echo "offset=$offset match='$match'"
+    echo "$marked"
+    echo
+  done > base64_decode_windows.txt
+
+
+rg --no-filename --byte-offset -o \
+  '\.toString\(\s*["'\''"]base64["'\''"]\s*\)|Base64\.encode\(|base64Encoder|Encoder_SecretString' \
+  bundle.js \
+| while IFS=: read -r offset match; do
+    before=40; after=60
+    start=$(( offset > before ? offset - before : 0 ))
+    len=${#match}
+    count=$(( before + len + after ))
+    bytes=$(dd if=bundle.js bs=1 skip="$start" count="$count" 2>/dev/null)
+    marked=$(printf '%s' "$bytes" | sed "s/${match}/[[$match]]/")
+    echo "offset=$offset match='$match'"
+    echo "$marked"
+    echo
+  done > base64_encode_windows.txt
+
+
+3. How this fits your 2-layer risk model
+
+Layer 1 (“What”)
+
+Base64 decode = suspicious processing primitive
+
+Base64 encode = possible exfil (if combined with network calls)
+
+Layer 2 (“How/Where”)
+
+If decode window also contains things like exec, eval, Function, child_process, etc → high risk.
+
+If encode window is near fetch, axios, https.request, webhook.site, etc → possible data exfil.
+
+So your next steps could be:
+
+Run the decode-only command and see if any windows also hit your exec/spawn grep rules.
+
+Run the encode-only command and cross-check with your URL / webhook / upload rules.
+
+If you want, we can combine those into a tiny script that:
+
+tags each window as ENCODE or DECODE
+
+adds flags like USES_EXEC, USES_WEBHOOK, USES_ENV_VAR
+
+and spits out a mini risk score per window.

@@ -11,13 +11,22 @@ env/
 # Dataset and outputs
 samples/
 out/
-malicious-dataset/
+malicious-dataset/raw
+malicious-dataset/sample/npm
+malicious-dataset/sample/npm_extracted
+malicious-dataset/sample/Analysis/*/
+npm_top_10k/extracted
+npm_top_10k/tarballs
+npm_top_10k/Analysis/*/
 npm_extracted/
 tmp/
 *.zip
 *.tar.gz
+*.log
 
 # Editor/OS files
 .DS_Store
 Thumbs.db
 *.swp
+!npm_top_10k/Analysis/*/*.tsv
+!malicious-dataset/sample/Analysis/*/*.tsv

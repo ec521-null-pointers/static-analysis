@@ -1,0 +1,422 @@
+#!/usr/bin/env python3
+"""
+extract_features.py
+
+Usage:
+    python3 extract_features.py <package_root>
+
+Given an extracted npm package directory, this script:
+
+  * Walks all JS/TS files.
+  * For each file:
+      - If it looks minified (<=10 lines AND some line > 5000 chars),
+        creates a segmented_<filename> with pseudo-lines.
+      - Runs A1..E2 feature extractors on the appropriate file
+        (segmented if present; E2 always uses the original file).
+      - Writes hits into static_features/<FEATURE>_extraction_<relpath-with-->.
+      - Immediately calls the corresponding process_<feature>.py
+        if that script exists in the same directory.
+
+  * For package.json:
+      - Runs F1 (lifecycle hooks / optionalDependencies / scripts)
+        and calls process_f1.py.
+
+Features:
+  A1  – exec/eval/new Function
+  A2  – base64 decode
+  A3  – base64 encode
+  B1  – process.env secrets
+  B2  – token / auth flows (secret files etc., depending on your rg port)
+  C1  – all URLs (for process_c1.py aggregation)
+  C2  – special exfil / auth endpoints
+  C3  – network / child process capabilities
+  D1  – publish / auth / push to registries (npm, git, gh, etc.)
+  D2  – code-level script / package.json manipulation hints
+  E1  – long base64-like literals (EXTRACT ONLY, no processor)
+  E2  – very long lines in original source
+  F1  – lifecycle hooks / optionalDependencies / scripts in package.json
+"""
+
+import os
+import re
+import sys
+import subprocess
+
+# ---------------------------------------------------------------------------
+# Helpers for running per-feature processors
+# ---------------------------------------------------------------------------
+
+def sanitize_label(path: str) -> str:
+    """Turn 'src/foo/bar.js' into 'src--foo--bar.js'."""
+    return path.replace(os.sep, "--").replace("\\", "--")
+
+
+# Which process_* script to call, and whether it needs the source file.
+PROCESS_CONFIG = {
+    "A1": {"script": "process_a1.py", "needs_source": True},
+    "A2": {"script": "process_a2.py", "needs_source": True},
+    "A3": {"script": "process_a3.py", "needs_source": True},
+    "B1": {"script": "process_b1.py", "needs_source": False},
+    "B2": {"script": "process_b2.py", "needs_source": False},
+    "C1": {"script": "process_c1.py", "needs_source": False},
+    "C2": {"script": "process_c2.py", "needs_source": False},
+    "C3": {"script": "process_c3.py", "needs_source": False},
+    "D1": {"script": "process_d1.py", "needs_source": False},
+    "D2": {"script": "process_d2.py", "needs_source": False},
+    "E2": {"script": "process_e2.py", "needs_source": False},
+    "F1": {"script": "process_f1.py", "needs_source": False},
+    # E1 intentionally has no processor
+}
+
+
+def run_processor(feature: str, source_path: str | None, hits_path: str):
+    """
+    Call the appropriate process_<feature>.py in the same directory as this script.
+
+    feature      e.g. "A1", "B2", "C1", ...
+    source_path  the scanned file (segmented_* for A1–A3) or None
+    hits_path    the just-written feature hits file
+    """
+    cfg = PROCESS_CONFIG.get(feature)
+    if not cfg:
+        return
+
+    script_name = cfg["script"]
+    needs_source = cfg["needs_source"]
+
+    here = os.path.dirname(os.path.abspath(__file__))
+    script_path = os.path.join(here, script_name)
+
+    if not os.path.exists(script_path):
+        # Processor not present yet – silently skip.
+        return
+
+    if needs_source:
+        if source_path is None:
+            return
+        argv = [sys.executable, script_path, source_path, hits_path]
+    else:
+        argv = [sys.executable, script_path, hits_path]
+
+    try:
+        subprocess.run(argv, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"[!] {feature} processor failed on {hits_path}: {e}", file=sys.stderr)
+
+
+# ---------------------------------------------------------------------------
+# Minified detection and segmentation
+# ---------------------------------------------------------------------------
+
+JS_EXTS = (".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx")
+
+
+def maybe_segment_minified(path: str) -> str:
+    """
+    If file looks minified (<= 10 lines AND any line > 5000 chars),
+    create segmented_<basename> with pseudo-lines, and return that path.
+    Otherwise return the original path.
+    """
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()
+    except OSError:
+        return path
+
+    if len(lines) > 10 or not any(len(ln) > 5000 for ln in lines):
+        return path  # not minified enough
+
+    text = "".join(lines)
+
+    # Apply the sed-like transformations:
+    #   s/;/;\n/g
+    #   s/{/{\n/g
+    #   s/}/}\n/g
+    #   s/\bvar\b/\nvar/g
+    #   s/\blet\b/\nlet/g
+    #   s/\bconst\b/\nconst/g
+    text = text.replace(";", ";\n")
+    text = text.replace("{", "{\n")
+    text = text.replace("}", "}\n")
+    text = re.sub(r"\bvar\b", r"\nvar", text)
+    text = re.sub(r"\blet\b", r"\nlet", text)
+    text = re.sub(r"\bconst\b", r"\nconst", text)
+
+    out_path = os.path.join(os.path.dirname(path), "segmented_" + os.path.basename(path))
+    try:
+        with open(out_path, "w", encoding="utf-8") as out:
+            out.write(text)
+    except OSError as e:
+        print(f"[!] Failed to write segmented file for {path}: {e}", file=sys.stderr)
+        return path
+
+    return out_path
+
+
+# ---------------------------------------------------------------------------
+# Regex patterns (mirror your original rg commands)
+# ---------------------------------------------------------------------------
+
+A1_RE = re.compile(
+    r"child_process\.(exec|spawn|execSync|fork)\(|\beval\(|new Function\(",
+    re.MULTILINE,
+)
+A2_RE = re.compile(
+    r"Buffer\.from\([^)]*['\"]base64['\"]\)|\batob\(|Base64\.decode\(",
+    re.MULTILINE,
+)
+A3_RE = re.compile(
+    r"\.toString\(\s*['\"]base64['\"]\s*\)|Base64\.encode\(|base64Encoder",
+    re.MULTILINE,
+)
+
+B1_RE = re.compile(
+    r"process\.env\.(NPM_TOKEN|GITHUB_TOKEN|GITLAB_TOKEN|CI_JOB_TOKEN|"
+    r"AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_SESSION_TOKEN|"
+    r"AZURE_[A-Z0-9_]*|GOOGLE_[A-Z0-9_]*)"
+)
+
+B2_RE = re.compile(
+    r"\.npmrc|\.gitconfig|id_rsa|id_dsa|known_hosts|authorized_keys|ssh-agent|SSH_AUTH_SOCK"
+)
+
+C1_RE = re.compile(r"https?://[^\s\"'<>)]+")
+
+C2_RE = re.compile(
+    r"(webhook\.site|requestbin|pastebin\.com|ngrok\.io|"
+    r"discord\.com/api/webhooks|raw\.githubusercontent\.com|"
+    r"gist\.github\.com|sts\.amazonaws\.com|signin\.aws\.amazonaws\.com|"
+    r"accounts\.google\.com|login\.microsoftonline\.com|graph\.microsoft\.com)"
+)
+
+C3_RE = re.compile(
+    r"(child_process\.(exec|spawn|execSync|fork)|"
+    r"\bfetch\s*\(|new\s+WebSocket|new\s+XMLHttpRequest|"
+    r"require\(\s*['\"](https?|net|tls)['\"]\s*\)|"
+    r"require\(\s*['\"]dns['\"]\s*\)|\.request\s*\()",
+    re.IGNORECASE,
+)
+
+D1_RE = re.compile(
+    r"\b(npm|yarn|pnpm|bun|poetry|pip|flit|cargo|go|mvn|gradle|docker|podman|dotnet|nuget|gh|git)"
+    r"\s*(publish|adduser|login|token|auth|push|upload|release|credentials|credential)\b"
+)
+
+# D2 (script manipulation) uses 3 tagged categories:
+D2_PKGWRITE_RE = re.compile(
+    r"fs\.(writeFile|writeFileSync|appendFile|createWriteStream)\([^)]*package\.json"
+)
+D2_SCRIPTS_RE = re.compile(r'(scripts"\s*:|\.scripts\b|\["scripts"\])')
+D2_HOOKSTR_RE = re.compile(
+    r'"(preinstall|install|postinstall|prepare|prepack|postpack|preversion|version|'
+    r'postversion|prepublish|prepublishOnly|publish|postpublish|prerestart|restart|'
+    r'postrestart|prebuild|build|postbuild)"'
+)
+
+# E1 large base64-like literals
+E1_RE = re.compile(r"[A-Za-z0-9+/]{40,}={0,2}")
+
+
+# F1 (package.json hooks) – we reuse same HOOKSTR and also look for optionalDependencies/scripts
+F1_HOOK_RE = D2_HOOKSTR_RE
+F1_OPTDEP_RE = re.compile(r'"optionalDependencies"\s*:')
+F1_SCRIPTS_RE = re.compile(r'"scripts"\s*:')
+
+
+# ---------------------------------------------------------------------------
+# Per-file feature extraction
+# ---------------------------------------------------------------------------
+
+def byte_offset(text: str, char_pos: int) -> int:
+    """Return UTF-8 byte offset for a character position."""
+    return len(text[:char_pos].encode("utf-8"))
+
+
+def extract_for_file(pkg_root: str, src_path: str, static_dir: str):
+    """
+    Run A1..E2 (except F1) on a single JS/TS file.
+    """
+    rel_path = os.path.relpath(src_path, pkg_root)
+    label = sanitize_label(rel_path)
+
+    scan_path = maybe_segment_minified(src_path)
+
+    try:
+        with open(scan_path, "r", encoding="utf-8", errors="ignore") as f:
+            text = f.read()
+    except OSError as e:
+        print(f"[!] Could not read {scan_path}: {e}", file=sys.stderr)
+        return
+
+    # Prepare hit-file paths
+    paths = {}
+    for feat in ["A1", "A2", "A3", "B1", "B2", "C1", "C2", "C3", "D1", "D2", "E1", "E2"]:
+        paths[feat] = os.path.join(static_dir, f"{feat}_extraction_{label}")
+
+    # Open hit files
+    files = {feat: open(p, "w", encoding="utf-8") for feat, p in paths.items()}
+
+    # --- A1 ---
+    for m in A1_RE.finditer(text):
+        line_no = text.count("\n", 0, m.start()) + 1
+        off = byte_offset(text, m.start())
+        files["A1"].write(f"{line_no}:{off}:{m.group(0)}\n")
+
+    # --- A2 ---
+    for m in A2_RE.finditer(text):
+        line_no = text.count("\n", 0, m.start()) + 1
+        off = byte_offset(text, m.start())
+        files["A2"].write(f"{line_no}:{off}:{m.group(0)}\n")
+
+    # --- A3 ---
+    for m in A3_RE.finditer(text):
+        line_no = text.count("\n", 0, m.start()) + 1
+        off = byte_offset(text, m.start())
+        files["A3"].write(f"{line_no}:{off}:{m.group(0)}\n")
+
+    # --- B1 ---
+    for m in B1_RE.finditer(text):
+        line_no = text.count("\n", 0, m.start()) + 1
+        off = byte_offset(text, m.start())
+        files["B1"].write(f"{line_no}:{off}:{m.group(0)}\n")
+
+    # --- B2 ---
+    for m in B2_RE.finditer(text):
+        line_no = text.count("\n", 0, m.start()) + 1
+        off = byte_offset(text, m.start())
+        files["B2"].write(f"{line_no}:{off}:{m.group(0)}\n")
+
+    # --- C1 ---
+    for m in C1_RE.finditer(text):
+        line_no = text.count("\n", 0, m.start()) + 1
+        off = byte_offset(text, m.start())
+        files["C1"].write(f"{line_no}:{off}:{m.group(0)}\n")
+
+    # --- C2 ---
+    for m in C2_RE.finditer(text):
+        line_no = text.count("\n", 0, m.start()) + 1
+        off = byte_offset(text, m.start())
+        files["C2"].write(f"{line_no}:{off}:{m.group(0)}\n")
+
+    # --- C3 ---
+    for m in C3_RE.finditer(text):
+        line_no = text.count("\n", 0, m.start()) + 1
+        off = byte_offset(text, m.start())
+        files["C3"].write(f"{line_no}:{off}:{m.group(0)}\n")
+
+    # --- D1 ---
+    for m in D1_RE.finditer(text):
+        line_no = text.count("\n", 0, m.start()) + 1
+        off = byte_offset(text, m.start())
+        files["D1"].write(f"{line_no}:{off}:{m.group(0)}\n")
+
+    # --- D2 (script manipulation tags) ---
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        tagged = False
+        if D2_PKGWRITE_RE.search(line):
+            files["D2"].write(f"[PKGWRITE] {rel_path}:{lineno}:{line.strip()}\n")
+            tagged = True
+        if D2_SCRIPTS_RE.search(line):
+            files["D2"].write(f"[SCRIPTS] {rel_path}:{lineno}:{line.strip()}\n")
+            tagged = True
+        if D2_HOOKSTR_RE.search(line):
+            files["D2"].write(f"[HOOKSTR] {rel_path}:{lineno}:{line.strip()}\n")
+            tagged = True
+        # (multiple tags per line are allowed)
+
+    # --- E1 (long base64-like strings) ---
+    for m in E1_RE.finditer(text):
+        line_no = text.count("\n", 0, m.start()) + 1
+        off = byte_offset(text, m.start())
+        files["E1"].write(f"{line_no}:{off}:{m.group(0)}\n")
+
+    # --- E2 (very long original lines – NOT segmented) ---
+    try:
+        with open(src_path, "r", encoding="utf-8", errors="ignore") as orig:
+            for lineno, line in enumerate(orig, start=1):
+                L = len(line.rstrip("\n"))
+                if L > 1000:
+                    files["E2"].write(f"{lineno}:{L}\n")
+    except OSError as e:
+        print(f"[!] Could not read original for E2 {src_path}: {e}", file=sys.stderr)
+
+    # Close all hit files
+    for f in files.values():
+        f.close()
+
+    # Run processors
+    run_processor("A1", scan_path, paths["A1"])
+    run_processor("A2", scan_path, paths["A2"])
+    run_processor("A3", scan_path, paths["A3"])
+    run_processor("B1", None, paths["B1"])
+    run_processor("B2", None, paths["B2"])
+    run_processor("C1", None, paths["C1"])
+    run_processor("C2", None, paths["C2"])
+    run_processor("C3", None, paths["C3"])
+    run_processor("D1", None, paths["D1"])
+    run_processor("D2", None, paths["D2"])
+    # E1 has no processor
+    run_processor("E2", None, paths["E2"])
+
+
+# ---------------------------------------------------------------------------
+# F1: package.json lifecycle hooks
+# ---------------------------------------------------------------------------
+
+def extract_f1_for_package(pkg_root: str, static_dir: str):
+    pkg_json = os.path.join(pkg_root, "package.json")
+    if not os.path.exists(pkg_json):
+        return
+
+    label = sanitize_label("package.json")
+    out_path = os.path.join(static_dir, f"F1_extraction_{label}")
+
+    with open(pkg_json, "r", encoding="utf-8", errors="ignore") as f, \
+         open(out_path, "w", encoding="utf-8") as out:
+        for lineno, line in enumerate(f, start=1):
+            text = line.rstrip("\n")
+            if F1_HOOK_RE.search(text) or F1_OPTDEP_RE.search(text) or F1_SCRIPTS_RE.search(text):
+                # keep the same "LINE:OFFSET:TEXT" style, with offset 0 for simplicity
+                out.write(f"{lineno}:0:{text}\n")
+
+    run_processor("F1", None, out_path)
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python3 extract_features.py <package_root>", file=sys.stderr)
+        sys.exit(1)
+
+    pkg_root = os.path.abspath(sys.argv[1])
+    if not os.path.isdir(pkg_root):
+        print(f"Error: {pkg_root} is not a directory", file=sys.stderr)
+        sys.exit(1)
+
+    static_dir = os.path.join(pkg_root, "static_features")
+    os.makedirs(static_dir, exist_ok=True)
+
+    # One-time F1 on package.json
+    extract_f1_for_package(pkg_root, static_dir)
+
+    # Walk JS/TS files
+    for dirpath, dirnames, filenames in os.walk(pkg_root):
+        # Skip some noisy dirs
+        dirnames[:] = [d for d in dirnames if d not in ("node_modules", ".git", ".hg", ".svn")]
+
+        for filename in filenames:
+            if not filename.lower().endswith(JS_EXTS):
+                continue
+            full_path = os.path.join(dirpath, filename)
+            print(f"[+] Scanning {os.path.relpath(full_path, pkg_root)}")
+            extract_for_file(pkg_root, full_path, static_dir)
+
+    print("[+] Feature extraction complete.")
+
+if __name__ == "__main__":
+    main()
+
+
