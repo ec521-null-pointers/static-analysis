@@ -6,10 +6,11 @@ __pycache__/
 .venv/
 venv/
 env/
+.venv_static/
+venv_static/
 *.egg-info/
 
 # Dataset and outputs
-.venv_static/
 samples/
 out/
 malicious-dataset/raw
