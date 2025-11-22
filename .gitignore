@@ -9,6 +9,7 @@ env/
 *.egg-info/
 
 # Dataset and outputs
+.venv_static/
 samples/
 out/
 malicious-dataset/raw
