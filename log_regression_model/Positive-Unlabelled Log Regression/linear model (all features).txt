@@ -1,0 +1,24 @@
+==== METRICS at threshold = 0.5 (reference) ====
+TP=422, FN=53, TN=5216, FP=34
+Accuracy:            0.9848
+Precision (PPV):     0.9254
+Recall (TPR):        0.8884
+False Positive Rate: 0.0065 (vs assumed-good)
+False Negative Rate: 0.1116
+=================================================
+
+[+] Threshold chosen for target-good-flag=10.00%
+    threshold = 0.116392
+    good flagged: 449 (8.55% of assumed-good)
+    known malicious caught: 445 (93.68% of known-malicious)
+
+==== METRICS at chosen threshold (good-flag rate) ====
+Threshold:           0.116392
+TP=445, FN=30, TN=4801, FP=449
+Accuracy:            0.9163
+Precision (PPV):     0.4978
+Recall (TPR):        0.9368
+False Positive Rate: 0.0855 (vs assumed-good)
+False Negative Rate: 0.0632
+======================================================
+

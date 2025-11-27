@@ -1,9 +1,0 @@
-.devcontainer/*
-.vscode/*
-.*
-tests/*
-Dockerfile
-docker-compose*
-coverage.xml
-dist/*
-htmlcov/*

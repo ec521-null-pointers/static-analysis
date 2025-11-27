@@ -1,0 +1,6 @@
+PACKAGE_NAME,RISK_LEVEL,PROB_MALICIOUS
+2024-12-03-@solana_web3.js-v1.95.7,HIGH,0.7991
+a11y-accordion-component-1.2.6,LOW,0.01088
+a11y-dialog-component-5.5.1,LOW,0.03425
+a2lix__symfony-collection-0.6.1,LOW,0.04871
+RISK_BANDS,,score <= 0.04880 => LOW; 0.04880 < score < 0.23870 => MEDIUM; score >= 0.23870 => HIGH

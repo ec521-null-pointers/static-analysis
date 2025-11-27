@@ -1,0 +1,16 @@
+Develop a model
+
+1. Prepare the Consolidated_Package_Scores.tsv for a positive-unlabelled set (from registry, assumed good), and another tsv for malicious set (from malicious repos)
+2. use generate_package_features.py to generate a set of good_features.csv and malicious_features.csv in the folder "Positive-Unlabelled Log Regression (with name)". This is where the separation of data for linear and quad model will be studied. Kernel transform is already determined to be not useful in such positive-unlabelled context.
+3. Run log regression using the py files, for linear or quadratic feature transform. use "--good <good_feature csv> --malicious <malicious_feature csv>" to provide input file for model. also consider "--target-good-flag <expected % of good package that may be malicious>" the log regression is performed with heavier weightage for malicious package, and less for good package, as per positive-unlabelled approach.
+4. Look at the prob vs score for the models, and pick 1 with better separation.
+5. copy the 4x .npy files to "Analysis Codes/classification_configuration", rename to norm_mean.npy, norm_std.npy, theta_bias.npy, theta_weghts.npy respectively
+6. run prob_vs_fp_fn.py on the data csv of the selected model. e.g. "python3 prob_vs_fp_fn.py --input-csv log_regression_quadratic_figure1_data.csv --step 0.0001"
+7. select 2 thresholds.
+- threshold 1: extremely low false negative rate , acceptable false positive rate. less or equal to this score will be assessed LOW risk (e.g. 5% false negative rate, 20% false positive rate)
+- threshold 2: low false negative rate, extremely low false positive rate. higher or equal than this score will be assessed HIGH risk (e.g. 10% false negative rate, 1% falso positive rate)
+- LOW threshold should find most malicious packages, with some possible false positive. HIGH threshold should minimize false positive, yet give a good amount of malicious packages.
+8. perform step 6 again with the selected threshold to visualise the chart. e.g "python3 prob_vs_fp_fn.py --input-csv log_regression_quadratic_figure1_data.csv --step 0.0001 --threshold1 0.0488 --threshold2 0.2387"
+9. update the threshold file in "Analysis Codes/classification_configuration" with the selected threshold.
+
+
