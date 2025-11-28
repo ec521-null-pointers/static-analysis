@@ -117,7 +117,7 @@ A1_COLS: List[str] = [
 BINARY_COUNT_FEATURES: List[str] = [
     "E2_bin_ge_1000000",
     "F1_hook_postinstall",
-    "F1_hook_preinstall",
+#    "F1_hook_preinstall",
     "F1_hook_prepare",
     "F1_optionalDependencies",
     "F1_scripts_block",

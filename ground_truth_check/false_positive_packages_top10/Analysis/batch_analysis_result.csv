@@ -1,0 +1,12 @@
+PACKAGE_NAME,RISK_LEVEL,PROB_MALICIOUS
+clickhouse-js-0.0.4,LOW,0.05077
+concat-with-sourcemap-1.0.3,LOW,0.05077
+hpcc-js__ddl-shim-3.2.2,MEDIUM,0.13926
+joplin-plugin-freehand-drawing-4.0.0,LOW,0.01244
+js-bottomsheet-1.2.6,MEDIUM,0.05247
+plugnmeet-protocol-js-1.0.16-29,MEDIUM,0.14615
+plugnmeet-sdk-js-1.4.1,LOW,0.00707
+sencha__reext-1.1.30,HIGH,0.28142
+specify-sh__sdk-0.4.2,LOW,0.03107
+wcp__wcpshared-4.7.4,MEDIUM,0.14602
+RISK_BANDS,,score <= 0.05100 => LOW; 0.05100 < score < 0.22300 => MEDIUM; score >= 0.22300 => HIGH

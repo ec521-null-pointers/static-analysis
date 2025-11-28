@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """
 batch_analysis.py
-
 Usage:
     python3 batch_analysis.py npm_top_10k/extracted
-
 This script:
   1. Iterates through every subdirectory (package) inside <extracted_root>
      and runs extract_features.py to populate:
@@ -18,14 +16,12 @@ This script:
      model found in:
          Analysis Codes/classification_configuration/
      to classify each package as LOW / MEDIUM / HIGH risk.
-
 Outputs:
   - Per-package Analysis/<pkg>/...
   - Consolidated TSV (from compile_scores.py) in Analysis/
   - Features CSV (from generate_package_features.py) in Analysis/
   - <features_basename>_analysis.csv (from generate_scan_results.py) in Analysis/
 """
-
 import os
 import sys
 import subprocess
@@ -94,13 +90,17 @@ def main():
     scan_results_script = os.path.join(
         analysis_codes_dir, "generate_scan_results.py"
     )
+    # NEW: merge preinstall risk script
+    merge_preinstall_script = os.path.join(
+        analysis_codes_dir, "merge_preinstall_risk.py"
+    )
+
     model_dir = os.path.join(analysis_codes_dir, "classification_configuration")
 
     # Packages under extracted_root
     packages = [d for d in os.scandir(extracted_root) if d.is_dir()]
     packages.sort(key=lambda e: e.name)
     total = len(packages)
-
     log(f"[+] Found {total} packages in {extracted_root}")
 
     done = 0
@@ -201,7 +201,6 @@ def main():
             features_csv = ""
     elif results_tsv and not os.path.isfile(gen_features_script):
         log(f"\n[!] generate_package_features.py not found at:\n    {gen_features_script}")
-
     # If no results_tsv, features step is skipped automatically.
 
     # ------------------------------------------------------------------
@@ -215,7 +214,7 @@ def main():
             log(f"    Features CSV: {features_csv}")
             log(f"    Model dir   : {model_dir}")
             try:
-                output_csv = os.path.join(analysis_root,"batch_analysis_result.csv")
+                output_csv = os.path.join(analysis_root, "batch_analysis_result.csv")
                 subprocess.run(
                     [
                         "python3",
@@ -235,6 +234,32 @@ def main():
                 log(f"[!] generate_scan_results.py FAILED (exit {e.returncode}).")
             except Exception as e:
                 log(f"[!] Unexpected error while running generate_scan_results.py: {e}")
+
+            # --- NEW: merge preinstall risk into batch_analysis_result.csv ---
+            if os.path.isfile(merge_preinstall_script):
+                result_csv_path = os.path.join(analysis_root, "batch_analysis_result.csv")
+                if os.path.isfile(result_csv_path):
+                    log("\n[+] Running merge_preinstall_risk.py to merge preinstall risk...")
+                    try:
+                        subprocess.run(
+                            [
+                                "python3",
+                                merge_preinstall_script,
+                                analysis_root,
+                                "-overwrite",
+                            ],
+                            check=True,
+                        )
+                        log("[+] merge_preinstall_risk.py completed successfully.")
+                    except subprocess.CalledProcessError as e:
+                        log(f"[!] merge_preinstall_risk.py FAILED (exit {e.returncode}).")
+                    except Exception as e:
+                        log(f"[!] Unexpected error while running merge_preinstall_risk.py: {e}")
+                else:
+                    log("\n[!] Skipping merge_preinstall_risk.py (batch_analysis_result.csv not found).")
+            else:
+                log(f"\n[!] merge_preinstall_risk.py not found at:\n    {merge_preinstall_script}")
+
     elif features_csv and not os.path.isfile(scan_results_script):
         log(f"\n[!] generate_scan_results.py not found at:\n    {scan_results_script}")
     else:

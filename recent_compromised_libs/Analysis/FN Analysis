@@ -1,0 +1,3 @@
+@asyncapi@studio: There are probably encoding of secrets, some potental websocket APIs, and Publishing behaviour, high obfucation. Yet probability of malicious based on model is 0.
+@posthog@wizard: only few API that execute processes
+

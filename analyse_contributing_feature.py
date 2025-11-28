@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """
 analyse_contributing_feature.py
-
 Two usage styles:
-
 1) Explicit CSV paths:
    python3 analyse_contributing_feature.py \
        --results-csv ground_truth_check/Analysis/batch_analysis_result.csv \
@@ -11,45 +9,37 @@ Two usage styles:
        --model-dir "Analysis Codes/classification_configuration" \
        --output ground_truth_check/Analysis/contributing_features.csv \
        --top-k 10
-
 2) Analysis-dir shorthand (recommended):
    python3 analyse_contributing_feature.py \
        --analysis-dir ground_truth_check/Analysis \
        --top-k 10
-
    which is equivalent to:
        results-csv = <analysis-dir>/batch_analysis_result.csv
        features-csv = <analysis-dir>/ml_features.csv
        output      = <analysis-dir>/contributing_features.csv
-
 Inputs
 ------
 results-csv :
     CSV produced by generate_scan_results.py
     Must contain PACKAGE_NAME and a probability column
     (e.g. PROB_MALICIOUS / prob_malicious / predicted_prob).
-
 features-csv :
     ml_features.csv (one row per package, columns:
     PACKAGE_NAME, feature1, feature2, ...).
-
 model-dir :
     Folder containing quadratic model params:
       - theta_weights.npy
       - theta_bias.npy
       - norm_mean.npy
       - norm_std.npy
-
 Output
 ------
 CSV with one row per package:
-  PACKAGE_NAME, PROB_MALICIOUS, FEATURE_1, ..., FEATURE_K
-
+  PACKAGE_NAME, Risk, Forced Risk High (Preinstall), PROB_MALICIOUS, FEATURE_1, ..., FEATURE_K
 Each FEATURE_i cell contains:
   <feature_name>; lin=...; quad=...; raw=...;
   share=XX.XX%; severity=YY.YY% (=share*prob)
 """
-
 import argparse
 import os
 import sys
@@ -58,7 +48,6 @@ import pandas as pd
 
 
 # ----------------- helpers ----------------- #
-
 def load_npy(path: str):
     return np.load(path, allow_pickle=False)
 
@@ -86,7 +75,6 @@ def pick_prob_column(df: pd.DataFrame) -> str:
 
 
 # ----------------- main ----------------- #
-
 def main():
     parser = argparse.ArgumentParser(
         description="Analyse feature contributions for a quadratic logistic model.",
@@ -151,7 +139,6 @@ def main():
              "defaults to <analysis-dir>/contributing_features.csv. "
              "Otherwise defaults to ./contributing_features.csv.",
     )
-
     parser.add_argument(
         "--top-k",
         type=int,
@@ -167,9 +154,7 @@ def main():
     args = parser.parse_args()
 
     # -------- resolve paths based on analysis-dir / explicit args -------- #
-
     analysis_dir = args.analysis_dir
-
     # Start from explicit flags
     results_csv = args.results_csv
     features_csv = args.features_csv
@@ -208,6 +193,32 @@ def main():
     if "PACKAGE_NAME" not in df_res_raw.columns:
         raise ValueError("results CSV must contain PACKAGE_NAME column")
 
+    # ---- NEW: extract Risk + Forced Risk High (Preinstall) helper cols ----
+    if "RISK_LEVEL" in df_res_raw.columns:
+        df_res_raw["__RISK_LEVEL__"] = df_res_raw["RISK_LEVEL"].astype(str)
+    else:
+        df_res_raw["__RISK_LEVEL__"] = ""
+
+    def map_preinstall(val):
+        if not isinstance(val, str) or not val.strip():
+            return "No"
+        text = val.strip()
+        if text == "YES":
+            return "Yes (F1_hook_preinstall)"
+        if text.startswith("YES (with potential pkg/script manipulation"):
+            return (
+                "Yes (F1_hook_preinstall) with potential package/script manipulation "
+                "(D2_pkg_json_write, D2_scripts_field_touch)"
+            )
+        # Fallback: keep some information rather than dropping it
+        return text
+
+    if "PREINSTALL" in df_res_raw.columns:
+        df_res_raw["__FORCED_PRE__"] = df_res_raw["PREINSTALL"].apply(map_preinstall)
+    else:
+        df_res_raw["__FORCED_PRE__"] = "No"
+    # -----------------------------------------------------------------------
+
     prob_col = pick_prob_column(df_res_raw)
 
     # Convert to numeric and drop non-numeric rows (e.g., RISK_BANDS)
@@ -217,7 +228,6 @@ def main():
     )
     df_res = df_res.dropna(subset=["__prob_numeric__"])
     df_res["__prob_numeric__"] = df_res["__prob_numeric__"].astype(float)
-
     print(f"[+] Using probability column: {prob_col}")
     print(f"[+] Packages with valid probabilities: {len(df_res)}")
 
@@ -250,7 +260,6 @@ def main():
 
     w_lin = w[:n_features]
     w_quad = w[n_features:]
-
     print(
         f"[+] Detected quadratic model: {n_features} base features, "
         f"{w.shape[0]} weights (linear + quadratic)."
@@ -262,7 +271,6 @@ def main():
     for _, r in df_res.iterrows():
         pkg = str(r["PACKAGE_NAME"])
         prob = float(r["__prob_numeric__"])
-
         if pkg not in df_feat.index:
             # No feature row for this package -> skip
             continue
@@ -276,9 +284,9 @@ def main():
         raw_lin = w_lin * x_norm       # per-feature linear contribution
         raw_quad = w_quad * x_sq       # per-feature quadratic contribution
         raw_total = raw_lin + raw_quad
+
         abs_total = np.abs(raw_total)
         sum_abs = abs_total.sum()
-
         if sum_abs == 0:
             shares = np.zeros_like(raw_total)
         else:
@@ -289,10 +297,14 @@ def main():
         # Sort features by absolute combined contribution (descending)
         order = np.argsort(-abs_total)
 
+        # ---- NEW: include Risk + Forced Risk High (Preinstall) before score ----
         row_out = {
             "PACKAGE_NAME": pkg,
+            "Risk": r["__RISK_LEVEL__"],
+            "Forced Risk High (Preinstall)": r["__FORCED_PRE__"],
             "PROB_MALICIOUS": round(prob, 5),
         }
+        # ------------------------------------------------------------------------
 
         for rank in range(args.top_k):
             if rank < len(order):

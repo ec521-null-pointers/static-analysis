@@ -1,0 +1,21 @@
+PACKAGE_NAME,RISK_LEVEL,PROB_MALICIOUS
+2025-06-06-@react-native-aria_focus-v0.2.10,LOW,0.04871
+2025-06-07-@react-native-aria_button-v0.2.11,LOW,0.04838
+2025-06-07-@react-native-aria_checkbox-v0.2.11,LOW,0.04871
+2025-06-07-@react-native-aria_combobox-v0.2.8,LOW,0.04789
+2025-06-07-@react-native-aria_disclosure-v0.2.9,LOW,0.04871
+2025-06-07-@react-native-aria_interactions-v0.2.17,LOW,0.04871
+2025-06-07-@react-native-aria_listbox-v0.2.10,LOW,0.04217
+2025-06-07-@react-native-aria_menu-v0.2.16,LOW,0.04703
+2025-06-07-@react-native-aria_overlays-v0.3.16,LOW,0.04814
+2025-06-07-@react-native-aria_separator-v0.2.7,LOW,0.04871
+2025-06-07-@react-native-aria_slider-v0.2.13,LOW,0.04793
+2025-06-07-@react-native-aria_switch-v0.2.5,LOW,0.0478
+2025-06-07-@react-native-aria_tabs-v0.2.14,LOW,0.04755
+2025-06-07-@react-native-aria_toggle-v0.2.12,LOW,0.04856
+2025-06-07-@react-native-aria_utils-v0.2.13,LOW,0.0335
+2025-06-24-@rxap_ngx-bootstrap-v19.0.4,LOW,0.01969
+2025-07-18-@pkgr_core-v0.2.8,LOW,0.04871
+2025-07-18-eslint-plugin-prettier-v4.2.3,LOW,0.01096
+2025-08-26-@nx_js-v21.5.0,LOW,0.01233
+RISK_BANDS,,score <= 0.04880 => LOW; 0.04880 < score < 0.23870 => MEDIUM; score >= 0.23870 => HIGH
