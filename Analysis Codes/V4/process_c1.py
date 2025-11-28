@@ -321,48 +321,25 @@ def resolve_output_paths(analysis_root: str, label: str):
     detail_out = os.path.join(details_dir, f"{FEATURE_ID}_detail_{label}")
     return counts_out, detail_out
 
-def write_counts(stats, counts_out: str):
-    class_counts = stats["class_counts"]
 
+def write_counts(stats, counts_out: str):
+    # suspicious IP hits = public IP or cloud metadata
     suspicious_ip_hits = (
-        class_counts.get("PUBLIC_IP", 0)
-        + class_counts.get("CLOUD_METADATA", 0)
+        stats["class_counts"].get("PUBLIC_IP", 0)
+        + stats["class_counts"].get("CLOUD_METADATA", 0)
     )
 
     with open(counts_out, "w", encoding="utf-8") as w:
-
-        # ===== EXACTLY the required schema =====
-
-        # API buckets
-        w.write(f"{FEATURE_ID}_API_AWS_GENERIC={class_counts.get('API_AWS_GENERIC', 0)}\n")
-        w.write(f"{FEATURE_ID}_API_AWS_STS={class_counts.get('API_AWS_STS', 0)}\n")
-        w.write(f"{FEATURE_ID}_API_GITHUB_GIST={class_counts.get('API_GITHUB_GIST', 0)}\n")
-        w.write(f"{FEATURE_ID}_API_GITHUB_RAW={class_counts.get('API_GITHUB_RAW', 0)}\n")
-        w.write(f"{FEATURE_ID}_API_GOOGLE_ACCOUNTS={class_counts.get('API_GOOGLE_ACCOUNTS', 0)}\n")
-        w.write(f"{FEATURE_ID}_API_MS_GRAPH={class_counts.get('API_MS_GRAPH', 0)}\n")
-        w.write(f"{FEATURE_ID}_API_MS_LOGIN={class_counts.get('API_MS_LOGIN', 0)}\n")
-        w.write(f"{FEATURE_ID}_API_PASTEBIN={class_counts.get('API_PASTEBIN', 0)}\n")
-        w.write(f"{FEATURE_ID}_API_WEBHOOK_SITE={class_counts.get('API_WEBHOOK_SITE', 0)}\n")
-
-        # Infra / classification groups
-        w.write(f"{FEATURE_ID}_CLOUD_METADATA={class_counts.get('CLOUD_METADATA', 0)}\n")
-        w.write(f"{FEATURE_ID}_CLOUD_PROVIDER={class_counts.get('CLOUD_PROVIDER', 0)}\n")
-        w.write(f"{FEATURE_ID}_DEV_HOST={class_counts.get('DEV_HOST', 0)}\n")
-        w.write(f"{FEATURE_ID}_GENERIC_DOMAIN={class_counts.get('GENERIC_DOMAIN', 0)}\n")
-        w.write(f"{FEATURE_ID}_LOCALHOST={class_counts.get('LOCALHOST', 0)}\n")
-        w.write(f"{FEATURE_ID}_PACKAGE_INFRA={class_counts.get('PACKAGE_INFRA', 0)}\n")
-
-        # IP buckets
-        w.write(f"{FEATURE_ID}_PRIVATE_IP={class_counts.get('PRIVATE_IP', 0)}\n")
-        w.write(f"{FEATURE_ID}_PUBLIC_IP={class_counts.get('PUBLIC_IP', 0)}\n")
-
-        # Core counters
-        w.write(f"{FEATURE_ID}_domain_url_hits={stats['domain_urls']}\n")
-        w.write(f"{FEATURE_ID}_ip_url_hits={stats['ip_urls']}\n")
         w.write(f"{FEATURE_ID}_raw_url_hits={stats['raw_url_hits']}\n")
-        w.write(f"{FEATURE_ID}_skipped_invalid_urls={stats['skipped_urls']}\n")
-        w.write(f"{FEATURE_ID}_suspicious_ip_hits={suspicious_ip_hits}\n")
         w.write(f"{FEATURE_ID}_valid_url_hits={stats['valid_url_hits']}\n")
+        w.write(f"{FEATURE_ID}_skipped_invalid_urls={stats['skipped_urls']}\n")
+        w.write(f"{FEATURE_ID}_ip_url_hits={stats['ip_urls']}\n")
+        w.write(f"{FEATURE_ID}_domain_url_hits={stats['domain_urls']}\n")
+        w.write(f"{FEATURE_ID}_suspicious_ip_hits={suspicious_ip_hits}\n")
+        # per-class counts
+        for cls, count in sorted(stats["class_counts"].items()):
+            w.write(f"{FEATURE_ID}_{cls}={count}\n")
+
 
 def write_summary(hosts, stats, detail_out: str, hits_path: str, label: str):
     suspicious_ip_hits = (

@@ -215,6 +215,7 @@ def main():
             log(f"    Features CSV: {features_csv}")
             log(f"    Model dir   : {model_dir}")
             try:
+                output_csv = os.path.join(analysis_root,"batch_analysis_result.csv")
                 subprocess.run(
                     [
                         "python3",
@@ -223,9 +224,12 @@ def main():
                         features_csv,
                         "--model-dir",
                         model_dir,
+                        "--output",
+                        output_csv,
                     ],
                     check=True,
                 )
+                log(f"[+] Saved final batch result CSV to: {output_csv}.")
                 log("[+] generate_scan_results.py completed successfully.")
             except subprocess.CalledProcessError as e:
                 log(f"[!] generate_scan_results.py FAILED (exit {e.returncode}).")
