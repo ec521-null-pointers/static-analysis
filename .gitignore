@@ -20,6 +20,9 @@ malicious-dataset/sample/Analysis/*/
 npm_top_10k/extracted
 npm_top_10k/tarballs
 npm_top_10k/Analysis/*/
+npm_rand_500/extracted
+npm_rand_500/tarballs
+npm_rand_500/Analysis/*/
 npm_extracted/
 tmp/
 *.zip
@@ -31,4 +34,5 @@ tmp/
 Thumbs.db
 *.swp
 !npm_top_10k/Analysis/*/*.tsv
+!npm_rand_500/Analysis/*/*.tsv
 !malicious-dataset/sample/Analysis/*/*.tsv
