@@ -7,7 +7,7 @@ Perform Analysis
 
 Perform Security Analysis of Package.
 1. Run analyse_contributing_feature.py with the analysis directory as argument to generate contributing_features.csv in the analysis directory.
-"python3 analyse_contributing_feature.py --analysis-dir <Analysis directory> --top-k <no. of features?"
+"python3 analyse_contributing_feature.py --analysis-dir <Analysis directory> --top-k <no. of features>"
 Note: If file to analyse is not in default directory that its generated, explicit paths of results csv, feature csv, model directory, and output path can be specified.
 2. For package of interest, the top features contributing to the score can be read from the contributing_features.csv.
 3. Deeper analysis of the package can be performed using the following files:
