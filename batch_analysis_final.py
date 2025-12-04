@@ -16,11 +16,16 @@ This script:
      model found in:
          Analysis Codes/classification_configuration/
      to classify each package as LOW / MEDIUM / HIGH risk.
+  5. Runs merge_preinstall_risk.py to fold preinstall-related risk into
+     batch_analysis_result.csv (overwriting it in-place).
+  6. Runs analyse_contributing_feature.py to produce per-package feature
+     contribution explanations.
 Outputs:
   - Per-package Analysis/<pkg>/...
   - Consolidated TSV (from compile_scores.py) in Analysis/
   - Features CSV (from generate_package_features.py) in Analysis/
-  - <features_basename>_analysis.csv (from generate_scan_results.py) in Analysis/
+  - batch_analysis_result.csv (from generate_scan_results.py + merge_preinstall_risk.py)
+  - contributing_features.csv (from analyse_contributing_feature.py) in Analysis/
 """
 import os
 import sys
@@ -46,8 +51,10 @@ def find_single_tsv(analysis_root: str) -> str:
     if len(candidates) == 0:
         log("[!] No .tsv file found in Analysis/; cannot build ML features.")
     else:
-        log("[!] Multiple .tsv files found in Analysis/; please clean up or "
-            "adapt batch_analysis.py to select the right one.")
+        log(
+            "[!] Multiple .tsv files found in Analysis/; please clean up or "
+            "adapt batch_analysis.py to select the right one."
+        )
         for c in candidates:
             log(f"    - {c}")
     return ""
@@ -80,8 +87,10 @@ def main():
     compile_script = os.path.join(analysis_codes_dir, "compile_scores.py")
     if not os.path.isfile(compile_script):
         log(f"[!] Warning: compile_scores.py not found at:\n    {compile_script}")
-        log("    Batch per-package analysis will still run, "
-            "but scores will not be consolidated.")
+        log(
+            "    Batch per-package analysis will still run, "
+            "but scores will not be consolidated."
+        )
 
     # New scripts for ML features & classification
     gen_features_script = os.path.join(
@@ -90,9 +99,15 @@ def main():
     scan_results_script = os.path.join(
         analysis_codes_dir, "generate_scan_results.py"
     )
+
     # NEW: merge preinstall risk script
     merge_preinstall_script = os.path.join(
         analysis_codes_dir, "merge_preinstall_risk.py"
+    )
+
+    # NEW: analyse_contributing_feature script
+    analyse_contrib_script = os.path.join(
+        analysis_codes_dir, "analyse_contributing_feature.py"
     )
 
     model_dir = os.path.join(analysis_codes_dir, "classification_configuration")
@@ -101,8 +116,8 @@ def main():
     packages = [d for d in os.scandir(extracted_root) if d.is_dir()]
     packages.sort(key=lambda e: e.name)
     total = len(packages)
-    log(f"[+] Found {total} packages in {extracted_root}")
 
+    log(f"[+] Found {total} packages in {extracted_root}")
     done = 0
     failed = 0
     skipped = 0
@@ -197,7 +212,9 @@ def main():
             log(f"[!] generate_package_features.py FAILED (exit {e.returncode}).")
             features_csv = ""
         except Exception as e:
-            log(f"[!] Unexpected error while running generate_package_features.py: {e}")
+            log(
+                f"[!] Unexpected error while running generate_package_features.py: {e}"
+            )
             features_csv = ""
     elif results_tsv and not os.path.isfile(gen_features_script):
         log(f"\n[!] generate_package_features.py not found at:\n    {gen_features_script}")
@@ -212,7 +229,7 @@ def main():
         else:
             log("\n[+] Running generate_scan_results.py to classify packages...")
             log(f"    Features CSV: {features_csv}")
-            log(f"    Model dir   : {model_dir}")
+            log(f"    Model dir    : {model_dir}")
             try:
                 output_csv = os.path.join(analysis_root, "batch_analysis_result.csv")
                 subprocess.run(
@@ -235,7 +252,9 @@ def main():
             except Exception as e:
                 log(f"[!] Unexpected error while running generate_scan_results.py: {e}")
 
-            # --- NEW: merge preinstall risk into batch_analysis_result.csv ---
+            # ------------------------------------------------------------------
+            # 5. merge_preinstall_risk.py (overwrite batch_analysis_result.csv)
+            # ------------------------------------------------------------------
             if os.path.isfile(merge_preinstall_script):
                 result_csv_path = os.path.join(analysis_root, "batch_analysis_result.csv")
                 if os.path.isfile(result_csv_path):
@@ -254,11 +273,54 @@ def main():
                     except subprocess.CalledProcessError as e:
                         log(f"[!] merge_preinstall_risk.py FAILED (exit {e.returncode}).")
                     except Exception as e:
-                        log(f"[!] Unexpected error while running merge_preinstall_risk.py: {e}")
+                        log(
+                            f"[!] Unexpected error while running merge_preinstall_risk.py: {e}"
+                        )
                 else:
-                    log("\n[!] Skipping merge_preinstall_risk.py (batch_analysis_result.csv not found).")
+                    log(
+                        "\n[!] Skipping merge_preinstall_risk.py "
+                        "(batch_analysis_result.csv not found)."
+                    )
             else:
-                log(f"\n[!] merge_preinstall_risk.py not found at:\n    {merge_preinstall_script}")
+                log(
+                    f"\n[!] merge_preinstall_risk.py not found at:\n"
+                    f"    {merge_preinstall_script}"
+                )
+
+            # ------------------------------------------------------------------
+            # 6. analyse_contributing_feature.py (--analysis-dir <analysis_root>)
+            # ------------------------------------------------------------------
+            if os.path.isfile(analyse_contrib_script):
+                log(
+                    "\n[+] Running analyse_contributing_feature.py "
+                    "to compute contributing features..."
+                )
+                try:
+                    subprocess.run(
+                        [
+                            "python3",
+                            analyse_contrib_script,
+                            "--analysis-dir",
+                            analysis_root,
+                        ],
+                        check=True,
+                    )
+                    log("[+] analyse_contributing_feature.py completed successfully.")
+                except subprocess.CalledProcessError as e:
+                    log(
+                        f"[!] analyse_contributing_feature.py FAILED "
+                        f"(exit {e.returncode})."
+                    )
+                except Exception as e:
+                    log(
+                        "[!] Unexpected error while running "
+                        f"analyse_contributing_feature.py: {e}"
+                    )
+            else:
+                log(
+                    f"\n[!] analyse_contributing_feature.py not found at:\n"
+                    f"    {analyse_contrib_script}"
+                )
 
     elif features_csv and not os.path.isfile(scan_results_script):
         log(f"\n[!] generate_scan_results.py not found at:\n    {scan_results_script}")
