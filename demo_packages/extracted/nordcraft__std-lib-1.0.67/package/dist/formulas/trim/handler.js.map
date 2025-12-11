@@ -1,0 +1,1 @@
+{"version":3,"file":"handler.js","sourceRoot":"","sources":["../../../formulas/trim/handler.ts"],"names":[],"mappings":"AAEA,MAAM,OAAO,GAA2B,CAAC,CAAC,GAAG,CAAC,EAAE,EAAE;IAChD,IAAI,OAAO,GAAG,KAAK,QAAQ,EAAE,CAAC;QAC5B,OAAO,IAAI,CAAA;IACb,CAAC;IACD,mGAAmG;IACnG,OAAO,GAAG,CAAC,IAAI,EAAE,CAAA;AACnB,CAAC,CAAA;AAED,eAAe,OAAO,CAAA"}

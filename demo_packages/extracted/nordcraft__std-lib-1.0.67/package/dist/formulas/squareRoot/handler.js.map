@@ -1,0 +1,1 @@
+{"version":3,"file":"handler.js","sourceRoot":"","sources":["../../../formulas/squareRoot/handler.ts"],"names":[],"mappings":"AAEA,MAAM,OAAO,GAA2B,CAAC,CAAC,CAAC,CAAC,EAAE,EAAE;IAC9C,IAAI,OAAO,CAAC,KAAK,QAAQ,EAAE,CAAC;QAC1B,OAAO,IAAI,CAAA;IACb,CAAC;IACD,iGAAiG;IACjG,OAAO,IAAI,CAAC,IAAI,CAAC,CAAC,CAAC,CAAA;AACrB,CAAC,CAAA;AAED,eAAe,OAAO,CAAA"}

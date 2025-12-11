@@ -1,0 +1,1 @@
+{"version":3,"file":"handler.js","sourceRoot":"","sources":["../../../actions/logToConsole/handler.ts"],"names":[],"mappings":"AAEA,MAAM,OAAO,GAAkB,CAAC,CAAC,KAAK,EAAE,IAAI,CAAY,EAAE,EAAE;IAC1D,sCAAsC;IACtC,OAAO,CAAC,GAAG,CAAC,KAAK,EAAE,IAAI,CAAC,CAAA;AAC1B,CAAC,CAAA;AAED,eAAe,OAAO,CAAA"}

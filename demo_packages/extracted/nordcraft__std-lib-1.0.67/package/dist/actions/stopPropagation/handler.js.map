@@ -1,0 +1,1 @@
+{"version":3,"file":"handler.js","sourceRoot":"","sources":["../../../actions/stopPropagation/handler.ts"],"names":[],"mappings":"AAEA,MAAM,OAAO,GAAkB,CAAC,CAAC,EAAE,IAAI,EAAE,KAAK,EAAE,EAAE;IAChD,uEAAuE;IACvE,KAAK,EAAE,eAAe,EAAE,EAAE,CAAA;AAC5B,CAAC,CAAA;AAED,eAAe,OAAO,CAAA"}

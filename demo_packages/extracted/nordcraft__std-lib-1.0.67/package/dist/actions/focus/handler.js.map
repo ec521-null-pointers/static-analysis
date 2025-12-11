@@ -1,0 +1,1 @@
+{"version":3,"file":"handler.js","sourceRoot":"","sources":["../../../actions/focus/handler.ts"],"names":[],"mappings":"AAEA,MAAM,OAAO,GAAkB,CAAC,CAAC,IAAI,CAAC,EAAE,EAAE;IACxC,IAAI,IAAI,YAAY,WAAW,EAAE,CAAC;QAChC,IAAI,CAAC,KAAK,EAAE,CAAA;IACd,CAAC;AACH,CAAC,CAAA;AAED,eAAe,OAAO,CAAA"}

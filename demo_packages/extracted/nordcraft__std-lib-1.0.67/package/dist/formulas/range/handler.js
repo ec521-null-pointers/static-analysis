@@ -1,0 +1,15 @@
+const handler = ([min, max]) => {
+    if (typeof min !== 'number') {
+        return null;
+    }
+    if (typeof max !== 'number') {
+        return null;
+    }
+    if (min > max) {
+        return [];
+    }
+    // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/from
+    return Array.from({ length: max - min + 1 }, (_, i) => i + min);
+};
+export default handler;
+//# sourceMappingURL=handler.js.map

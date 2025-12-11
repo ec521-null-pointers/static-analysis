@@ -1,0 +1,1 @@
+{"version":3,"file":"handler.js","sourceRoot":"","sources":["../../../formulas/timestamp/handler.ts"],"names":[],"mappings":"AAEA,MAAM,OAAO,GAA2B,CAAC,CAAC,IAAI,CAAC,EAAE,EAAE;IACjD,IAAI,CAAC,IAAI,IAAI,CAAC,CAAC,IAAI,YAAY,IAAI,CAAC,EAAE,CAAC;QACrC,OAAO,IAAI,CAAA;IACb,CAAC;IACD,oGAAoG;IACpG,OAAO,IAAI,CAAC,OAAO,EAAE,CAAA;AACvB,CAAC,CAAA;AAED,eAAe,OAAO,CAAA"}

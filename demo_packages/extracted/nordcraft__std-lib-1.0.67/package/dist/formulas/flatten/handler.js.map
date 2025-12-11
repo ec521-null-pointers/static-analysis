@@ -1,0 +1,1 @@
+{"version":3,"file":"handler.js","sourceRoot":"","sources":["../../../formulas/flatten/handler.ts"],"names":[],"mappings":"AAEA,MAAM,OAAO,GAAmC,CAAC,CAAC,KAAK,CAAC,EAAE,EAAE;IAC1D,IAAI,KAAK,CAAC,OAAO,CAAC,KAAK,CAAC,EAAE,CAAC;QACzB,kGAAkG;QAClG,OAAO,KAAK,CAAC,IAAI,EAAE,CAAA;IACrB,CAAC;IACD,OAAO,IAAI,CAAA;AACb,CAAC,CAAA;AAED,eAAe,OAAO,CAAA"}

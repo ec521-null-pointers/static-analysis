@@ -1,0 +1,33 @@
+{
+  "name": "@capibox/bridge-browser",
+  "version": "0.0.90",
+  "description": "",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "clickup:upload-md": "node scripts/clickup-upload-md.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/memory-cache": "^0.2.6",
+    "openapi-typescript": "^7.8.0",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.0.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "memory-cache": "^0.2.0",
+    "openapi-fetch": "^0.14.0",
+    "openapi-react-query": "^0.5.0"
+  },
+  "peerDependencies": {
+  }
+}

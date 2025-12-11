@@ -1,0 +1,66 @@
+{
+  "bugs": {
+    "url": "https://github.com/adobe/aio-lib-test-proxy/issues"
+  },
+  "bundleDependencies": [],
+  "dependencies": {
+    "@adobe/aio-lib-core-logging": "^3",
+    "express": "^4.17.1",
+    "mockttp": "^2.2.3",
+    "node-fetch": "^2.6.4",
+    "syswide-cas": "^5.3.0"
+  },
+  "deprecated": false,
+  "description": "Adobe I/O Lib Test Proxies and Api Servers",
+  "devDependencies": {
+    "@adobe/eslint-config-aio-lib-config": "^2.0.2",
+    "babel-runtime": "^6.26.0",
+    "dotenv": "^8.1.0",
+    "eol": "^0.9.1",
+    "eslint": "^8.56.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jest": "^27.6.1",
+    "eslint-plugin-jsdoc": "^42.0.0",
+    "eslint-plugin-n": "^15.7.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-plugin-standard": "^4.0.0",
+    "fetch-mock": "^9.0.0",
+    "http-proxy-agent": "^7",
+    "https-proxy-agent": "^7",
+    "jest": "^29",
+    "jest-fetch-mock": "^3.0.1",
+    "jest-html-reporter": "^3.4.1",
+    "jest-junit": "^10.0.0",
+    "jest-plugin-fs": "^2.9.0",
+    "jsdoc": "^3.6.3",
+    "jsdoc-to-markdown": "^5.0.0",
+    "query-string": "^7.0.1",
+    "stdout-stderr": "^0.1.9",
+    "tsd-jsdoc": "^2.4.0",
+    "typescript": "^5.3.3"
+  },
+  "homepage": "https://github.com/adobe/aio-lib-test-proxy",
+  "license": "Apache-2.0",
+  "main": "src/index.js",
+  "name": "@adobe/aio-lib-test-proxy",
+  "repository": "https://github.com/adobe/aio-lib-test-proxy",
+  "scripts": {
+    "e2e": "jest --config e2e/jest.config.js",
+    "generate-docs": "npm run typings && npm run jsdoc",
+    "jsdoc": "jsdoc2md -t ./docs/readme_template.md src/**/*.js > README.md",
+    "lint": "eslint src test",
+    "test": "npm run lint && npm run unit-tests",
+    "typings": "jsdoc -t node_modules/tsd-jsdoc/dist -r src/*.js -d .",
+    "unit-tests": "jest --config test/jest.config.js --runInBand"
+  },
+  "version": "2.1.0",
+  "engineStrict": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "src"
+  ]
+}

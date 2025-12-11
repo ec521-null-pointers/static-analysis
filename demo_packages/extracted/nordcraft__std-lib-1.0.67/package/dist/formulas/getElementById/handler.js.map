@@ -1,0 +1,1 @@
+{"version":3,"file":"handler.js","sourceRoot":"","sources":["../../../formulas/getElementById/handler.ts"],"names":[],"mappings":"AAEA,MAAM,OAAO,GAAgC,CAAC,CAAC,EAAE,CAAC,EAAE,EAAE,IAAI,EAAE,EAAE,EAAE;IAC9D,IAAI,OAAO,EAAE,KAAK,QAAQ,EAAE,CAAC;QAC3B,OAAO,IAAI,CAAA;IACb,CAAC;IACD,+EAA+E;IAC/E,OAAO,IAAI,CAAC,cAAc,CAAC,EAAE,CAAC,CAAA;AAChC,CAAC,CAAA;AAED,eAAe,OAAO,CAAA"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"handler.js","sourceRoot":"","sources":["../../../formulas/encodeURIComponent/handler.ts"],"names":[],"mappings":"AAEA,MAAM,OAAO,GAA2B,CAAC,CAAC,YAAY,CAAC,EAAE,EAAE;IACzD,IAAI,OAAO,YAAY,KAAK,QAAQ,EAAE,CAAC;QACrC,OAAO,IAAI,CAAA;IACb,CAAC;IACD,0GAA0G;IAC1G,OAAO,kBAAkB,CAAC,YAAY,CAAC,CAAA;AACzC,CAAC,CAAA;AAED,eAAe,OAAO,CAAA"}

@@ -1,0 +1,4003 @@
+export type Features = Record<string, boolean>;
+export type FeatureFlags = Record<string, boolean | string>;
+export interface TelemetryConnection {
+    /** Required. Communication protocol used to send telemetry data. Options: grpc, http. */
+    protocol: 'grpc' | 'http';
+    /** Required. URI of the OpenTelemetry Collector (e.g., https://collector.customer.com:4317). */
+    endpoint: string;
+    /**
+     * Required. Authentication configuration to securely send telemetry.
+     * Options include bearer token, basic auth, or API key.
+     */
+    authentication: TelemetryAuthentication;
+}
+export interface TelemetryAuthentication {
+    bearer_token?: {
+        token: string;
+    };
+    basic?: {
+        username: string;
+        password: string;
+    };
+    api_key?: {
+        key: string;
+    };
+}
+export interface TelemetryConfig {
+    /** Required. The telemetry data types to enable. One or both of: metrics, logs. */
+    types: ('metrics' | 'logs')[];
+    /** Optional. Overrides the default endpoint for metrics (e.g., https://metrics.customer.com:4317). */
+    metrics_endpoint_override?: string;
+    /** Optional. Overrides the default endpoint for logs (e.g., https://logs.customer.com:4318). */
+    logs_endpoint_override?: string;
+}
+export interface TelemetryResource {
+    /**
+     * Optional. Key-value attributes that describe the source of telemetry (e.g., service.name: neon-test).
+     * See: @https://opentelemetry.io/docs/specs/semconv/resource/#services
+     */
+    attributes?: Record<string, string>;
+}
+/** @min 0.25 */
+export type ComputeUnit = number;
+/**
+ * The Neon compute provisioner.
+ * Specify the `k8s-neonvm` provisioner to create a compute endpoint that supports Autoscaling.
+ *
+ * Provisioner can be one of the following values:
+ * * k8s-pod
+ * * k8s-neonvm
+ *
+ * Clients must expect, that any string value that is not documented in the description above should be treated as a error. UNKNOWN value if safe to treat as an error too.
+ */
+export type Provisioner = string;
+export interface PaginationResponse {
+    /**
+     * Cursor based pagination is used. The user must pass the cursor as is to the backend.
+     * For more information about cursor based pagination, see
+     * https://learn.microsoft.com/en-us/ef/core/querying/pagination#keyset-pagination
+     */
+    pagination?: Pagination;
+}
+/**
+ * Cursor based pagination is used. The user must pass the cursor as is to the backend.
+ * For more information about cursor based pagination, see
+ * https://learn.microsoft.com/en-us/ef/core/querying/pagination#keyset-pagination
+ * @example {"cursor":"2022-12-07T00:45:05.262011Z"}
+ */
+export interface Pagination {
+    /** @minLength 1 */
+    cursor: string;
+}
+/** Empty response. */
+export type EmptyResponse = object;
+/** Add a new JWKS to a specific endpoint of a project */
+export interface AddProjectJWKSRequest {
+    /** The URL that lists the JWKS */
+    jwks_url: string;
+    /** The name of the authentication provider (e.g., Clerk, Stytch, Auth0) */
+    provider_name: string;
+    /**
+     * Branch ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    branch_id?: string;
+    /** The name of the required JWT Audience to be used */
+    jwt_audience?: string;
+    /**
+     * The roles the JWKS should be mapped to
+     * @maxItems 10
+     * @minItems 1
+     */
+    role_names: string[];
+}
+export interface JWKS {
+    /** JWKS ID */
+    id: string;
+    /**
+     * Project ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    project_id: string;
+    /**
+     * Branch ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    branch_id?: string;
+    /** The URL that lists the JWKS */
+    jwks_url: string;
+    /** The name of the authentication provider (e.g., Clerk, Stytch, Auth0) */
+    provider_name: string;
+    /**
+     * The date and time when the JWKS was created
+     * @format date-time
+     */
+    created_at: string;
+    /**
+     * The date and time when the JWKS was last modified
+     * @format date-time
+     */
+    updated_at: string;
+    /** The name of the required JWT Audience to be used */
+    jwt_audience?: string;
+}
+/** The list of configured JWKS definitions for a project */
+export interface ProjectJWKSResponse {
+    jwks: JWKS[];
+}
+export interface ApiKeyCreateRequest {
+    /**
+     * A user-specified API key name. This value is required when creating an API key.
+     * @maxLength 64
+     */
+    key_name: string;
+}
+export type OrgApiKeyCreateRequest = ApiKeyCreateRequest & {
+    /**
+     * If set, the API key can access only this project
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    project_id?: string;
+};
+export interface ApiKeyCreateResponse {
+    /**
+     * The API key ID
+     * @format int64
+     */
+    id: number;
+    /** The generated 64-bit token required to access the Neon API */
+    key: string;
+    /** The user-specified API key name */
+    name: string;
+    /**
+     * A timestamp indicating when the API key was created
+     * @format date-time
+     */
+    created_at: string;
+    /**
+     * ID of the user who created this API key
+     * @format uuid
+     */
+    created_by: string;
+}
+export type OrgApiKeyCreateResponse = ApiKeyCreateResponse & {
+    /**
+     * If set, the API key can access only this project
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    project_id?: string;
+};
+export interface ApiKeyRevokeResponse {
+    /**
+     * The API key ID
+     * @format int64
+     */
+    id: number;
+    /** The user-specified API key name */
+    name: string;
+    /**
+     * A timestamp indicating when the API key was created
+     * @format date-time
+     */
+    created_at: string;
+    /**
+     * ID of the user who created this API key
+     * @format uuid
+     */
+    created_by: string;
+    /**
+     * A timestamp indicating when the API was last used
+     * @format date-time
+     */
+    last_used_at?: string | null;
+    /** The IP address from which the API key was last used */
+    last_used_from_addr: string;
+    /** A `true` or `false` value indicating whether the API key is revoked */
+    revoked: boolean;
+}
+export type OrgApiKeyRevokeResponse = ApiKeyRevokeResponse & {
+    /**
+     * If set, the API key can access only this project
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    project_id?: string;
+};
+export interface ApiKeysListResponseItem {
+    /**
+     * The API key ID
+     * @format int64
+     */
+    id: number;
+    /** The user-specified API key name */
+    name: string;
+    /**
+     * A timestamp indicating when the API key was created
+     * @format date-time
+     */
+    created_at: string;
+    /** The user data of the user that created this API key. */
+    created_by: ApiKeyCreatorData;
+    /**
+     * A timestamp indicating when the API was last used
+     * @format date-time
+     */
+    last_used_at?: string | null;
+    /** The IP address from which the API key was last used */
+    last_used_from_addr: string;
+}
+export type OrgApiKeysListResponseItem = ApiKeysListResponseItem & {
+    /**
+     * If set, the API key can access only this project
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    project_id?: string;
+};
+/** The user data of the user that created this API key. */
+export interface ApiKeyCreatorData {
+    /**
+     * ID of the user who created this API key
+     * @format uuid
+     */
+    id: string;
+    /** The name of the user. */
+    name: string;
+    /** The URL to the user's avatar image. */
+    image: string;
+}
+/** @example [{"id":"a07f8772-1877-4da9-a939-3a3ae62d1d8d","project_id":"spring-example-302709","branch_id":"br-wispy-meadow-118737","endpoint_id":"ep-silent-smoke-806639","action":"create_branch","status":"running","failures_count":0,"created_at":"2022-11-08T23:33:16Z","updated_at":"2022-11-08T23:33:20Z","total_duration_ms":400},{"id":"d8ac46eb-a757-42b1-9907-f78322ee394e","project_id":"spring-example-302709","branch_id":"br-wispy-meadow-118737","endpoint_id":"ep-silent-smoke-806639","action":"start_compute","status":"finished","failures_count":0,"created_at":"2022-11-15T20:02:00Z","updated_at":"2022-11-15T20:02:02Z","total_duration_ms":200}] */
+export interface Operation {
+    /**
+     * The operation ID
+     * @format uuid
+     */
+    id: string;
+    /**
+     * The Neon project ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    project_id: string;
+    /**
+     * The branch ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    branch_id?: string;
+    /**
+     * The endpoint ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    endpoint_id?: string;
+    /** The action performed by the operation */
+    action: OperationAction;
+    /** The status of the operation */
+    status: OperationStatus;
+    /** The error that occurred */
+    error?: string;
+    /**
+     * The number of times the operation failed
+     * @format int32
+     */
+    failures_count: number;
+    /**
+     * A timestamp indicating when the operation was last retried
+     * @format date-time
+     */
+    retry_at?: string;
+    /**
+     * A timestamp indicating when the operation was created
+     * @format date-time
+     */
+    created_at: string;
+    /**
+     * A timestamp indicating when the operation status was last updated
+     * @format date-time
+     */
+    updated_at: string;
+    /**
+     * The total duration of the operation in milliseconds
+     * @format int32
+     */
+    total_duration_ms: number;
+}
+export interface OperationResponse {
+    operation: Operation;
+}
+export interface OperationsResponse {
+    operations: Operation[];
+}
+/** The action performed by the operation */
+export declare enum OperationAction {
+    CreateCompute = "create_compute",
+    CreateTimeline = "create_timeline",
+    StartCompute = "start_compute",
+    SuspendCompute = "suspend_compute",
+    ApplyConfig = "apply_config",
+    CheckAvailability = "check_availability",
+    DeleteTimeline = "delete_timeline",
+    CreateBranch = "create_branch",
+    ImportData = "import_data",
+    TenantIgnore = "tenant_ignore",
+    TenantAttach = "tenant_attach",
+    TenantDetach = "tenant_detach",
+    TenantReattach = "tenant_reattach",
+    ReplaceSafekeeper = "replace_safekeeper",
+    DisableMaintenance = "disable_maintenance",
+    ApplyStorageConfig = "apply_storage_config",
+    PrepareSecondaryPageserver = "prepare_secondary_pageserver",
+    SwitchPageserver = "switch_pageserver",
+    DetachParentBranch = "detach_parent_branch",
+    TimelineArchive = "timeline_archive",
+    TimelineUnarchive = "timeline_unarchive",
+    StartReservedCompute = "start_reserved_compute",
+    SyncDbsAndRolesFromCompute = "sync_dbs_and_roles_from_compute",
+    ApplySchemaFromBranch = "apply_schema_from_branch",
+    TimelineMarkInvisible = "timeline_mark_invisible"
+}
+/** The status of the operation */
+export declare enum OperationStatus {
+    Scheduling = "scheduling",
+    Running = "running",
+    Finished = "finished",
+    Failed = "failed",
+    Error = "error",
+    Cancelling = "cancelling",
+    Cancelled = "cancelled",
+    Skipped = "skipped"
+}
+/**
+ * Essential data about the project. Full data is available at the getProject endpoint.
+ * @example {"id":"spring-example-302709","platform_id":"aws","region_id":"aws-us-east-2","name":"spring-example-302709","provisioner":"k8s-pod","pg_version":15,"proxy_host":"us-east-2.aws.neon.tech","store_passwords":true,"creation_source":"console","created_at":"2022-12-13T01:30:55Z","updated_at":"2022-12-13T01:30:55Z"}
+ */
+export interface ProjectListItem {
+    /**
+     * The project ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    id: string;
+    /** The cloud platform identifier. Currently, only AWS is supported, for which the identifier is `aws`. */
+    platform_id: string;
+    /** The region identifier */
+    region_id: string;
+    /** The project name */
+    name: string;
+    /**
+     * The Neon compute provisioner.
+     * Specify the `k8s-neonvm` provisioner to create a compute endpoint that supports Autoscaling.
+     *
+     * Provisioner can be one of the following values:
+     * * k8s-pod
+     * * k8s-neonvm
+     *
+     * Clients must expect, that any string value that is not documented in the description above should be treated as a error. UNKNOWN value if safe to treat as an error too.
+     */
+    provisioner: Provisioner;
+    /** A collection of settings for a Neon endpoint */
+    default_endpoint_settings?: DefaultEndpointSettings;
+    settings?: ProjectSettingsData;
+    /** The major Postgres version number. Currently supported versions are `14`, `15`, `16`, and `17`. */
+    pg_version: PgVersion;
+    /** The proxy host for the project. This value combines the `region_id`, the `platform_id`, and the Neon domain (`neon.tech`). */
+    proxy_host: string;
+    /**
+     * The logical size limit for a branch. The value is in MiB.
+     * @format int64
+     */
+    branch_logical_size_limit: number;
+    /**
+     * The logical size limit for a branch. The value is in B.
+     * @format int64
+     */
+    branch_logical_size_limit_bytes: number;
+    /** Whether or not passwords are stored for roles in the Neon project. Storing passwords facilitates access to Neon features that require authorization. */
+    store_passwords: boolean;
+    /**
+     * Control plane observed endpoints of this project being active this amount of wall-clock time.
+     * @format int64
+     * @min 0
+     */
+    active_time: number;
+    /**
+     * DEPRECATED. Use data from the getProject endpoint instead.
+     * @deprecated
+     * @format int64
+     */
+    cpu_used_sec: number;
+    /**
+     * A timestamp indicating when project maintenance begins. If set, the project is placed into maintenance mode at this time.
+     * @format date-time
+     */
+    maintenance_starts_at?: string;
+    /** The project creation source */
+    creation_source: string;
+    /**
+     * A timestamp indicating when the project was created
+     * @format date-time
+     */
+    created_at: string;
+    /**
+     * A timestamp indicating when the project was last updated
+     * @format date-time
+     */
+    updated_at: string;
+    /**
+     * The current space occupied by the project in storage, in bytes. Synthetic storage size combines the logical data size and Write-Ahead Log (WAL) size for all branches in a project.
+     * @format int64
+     */
+    synthetic_storage_size?: number;
+    /**
+     * DEPRECATED. Use `consumption_period_end` from the getProject endpoint instead.
+     * A timestamp indicating when the project quota resets
+     * @deprecated
+     * @format date-time
+     */
+    quota_reset_at?: string;
+    owner_id: string;
+    /**
+     * The most recent time when any endpoint of this project was active.
+     *
+     * Omitted when observed no activity for endpoints of this project.
+     * @format date-time
+     */
+    compute_last_active_at?: string;
+    /**
+     * Organization id if the project belongs to an organization.
+     * Permissions for the project will be given to organization members as defined by the organization admins.
+     * The permissions of the project do not depend on the user that created the project if a project belongs to an organization.
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    org_id?: string;
+    /** Organization name if the project belongs to an organization. */
+    org_name?: string;
+    /**
+     * The number of seconds to retain the shared history for all branches in this project.
+     * @format int32
+     */
+    history_retention_seconds?: number;
+    /**
+     * A timestamp indicating when HIPAA was enabled for this project
+     * @format date-time
+     */
+    hipaa_enabled_at?: string;
+}
+/** @example {"id":"spring-example-302709","platform_id":"aws","region_id":"aws-us-east-2","name":"spring-example-302709","provisioner":"k8s-pod","pg_version":15,"proxy_host":"us-east-2.aws.neon.tech","store_passwords":true,"creation_source":"console","history_retention_seconds":604800,"created_at":"2022-12-13T01:30:55Z","updated_at":"2022-12-13T01:30:55Z","owner":{"name":"John Smith","email":"some@email.com","branches_limit":10,"subscription_type":"scale"},"org_id":"org-morning-bread-81040908"} */
+export interface Project {
+    /**
+     * Bytes-Hour. Project consumed that much storage hourly during the billing period. The value has some lag.
+     * The value is reset at the beginning of each billing period.
+     * @format int64
+     * @min 0
+     */
+    data_storage_bytes_hour: number;
+    /**
+     * Bytes. Egress traffic from the Neon cloud to the client for given project over the billing period.
+     * Includes deleted endpoints. The value has some lag. The value is reset at the beginning of each billing period.
+     * @format int64
+     * @min 0
+     */
+    data_transfer_bytes: number;
+    /**
+     * Bytes. Amount of WAL that travelled through storage for given project across all branches.
+     * The value has some lag. The value is reset at the beginning of each billing period.
+     * @format int64
+     * @min 0
+     */
+    written_data_bytes: number;
+    /**
+     * Seconds. The number of CPU seconds used by the project's compute endpoints, including compute endpoints that have been deleted.
+     * The value has some lag. The value is reset at the beginning of each billing period.
+     * Examples:
+     * 1. An endpoint that uses 1 CPU for 1 second is equal to `compute_time=1`.
+     * 2. An endpoint that uses 2 CPUs simultaneously for 1 second is equal to `compute_time=2`.
+     * @format int64
+     * @min 0
+     */
+    compute_time_seconds: number;
+    /**
+     * Seconds. Control plane observed endpoints of this project being active this amount of wall-clock time.
+     * The value has some lag.
+     * The value is reset at the beginning of each billing period.
+     * @format int64
+     * @min 0
+     */
+    active_time_seconds: number;
+    /**
+     * DEPRECATED, use compute_time instead.
+     * @deprecated
+     * @format int64
+     */
+    cpu_used_sec: number;
+    /**
+     * The project ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    id: string;
+    /** The cloud platform identifier. Currently, only AWS is supported, for which the identifier is `aws`. */
+    platform_id: string;
+    /** The region identifier */
+    region_id: string;
+    /** The project name */
+    name: string;
+    /**
+     * The Neon compute provisioner.
+     * Specify the `k8s-neonvm` provisioner to create a compute endpoint that supports Autoscaling.
+     *
+     * Provisioner can be one of the following values:
+     * * k8s-pod
+     * * k8s-neonvm
+     *
+     * Clients must expect, that any string value that is not documented in the description above should be treated as a error. UNKNOWN value if safe to treat as an error too.
+     */
+    provisioner: Provisioner;
+    /** A collection of settings for a Neon endpoint */
+    default_endpoint_settings?: DefaultEndpointSettings;
+    settings?: ProjectSettingsData;
+    /** The major Postgres version number. Currently supported versions are `14`, `15`, `16`, and `17`. */
+    pg_version: PgVersion;
+    /** The proxy host for the project. This value combines the `region_id`, the `platform_id`, and the Neon domain (`neon.tech`). */
+    proxy_host: string;
+    /**
+     * The logical size limit for a branch. The value is in MiB.
+     * @format int64
+     */
+    branch_logical_size_limit: number;
+    /**
+     * The logical size limit for a branch. The value is in B.
+     * @format int64
+     */
+    branch_logical_size_limit_bytes: number;
+    /** Whether or not passwords are stored for roles in the Neon project. Storing passwords facilitates access to Neon features that require authorization. */
+    store_passwords: boolean;
+    /**
+     * A timestamp indicating when project maintenance begins. If set, the project is placed into maintenance mode at this time.
+     * @format date-time
+     */
+    maintenance_starts_at?: string;
+    /** The project creation source */
+    creation_source: string;
+    /**
+     * The number of seconds to retain the shared history for all branches in this project.
+     * @format int32
+     */
+    history_retention_seconds: number;
+    /**
+     * A timestamp indicating when the project was created
+     * @format date-time
+     */
+    created_at: string;
+    /**
+     * A timestamp indicating when the project was last updated
+     * @format date-time
+     */
+    updated_at: string;
+    /**
+     * The current space occupied by the project in storage, in bytes. Synthetic storage size combines the logical data size and Write-Ahead Log (WAL) size for all branches in a project.
+     * @format int64
+     */
+    synthetic_storage_size?: number;
+    /**
+     * A date-time indicating when Neon Cloud started measuring consumption for current consumption period.
+     * @format date-time
+     */
+    consumption_period_start: string;
+    /**
+     * A date-time indicating when Neon Cloud plans to stop measuring consumption for current consumption period.
+     * @format date-time
+     */
+    consumption_period_end: string;
+    /**
+     * DEPRECATED. Use `consumption_period_end` from the getProject endpoint instead.
+     * A timestamp indicating when the project quota resets.
+     * @deprecated
+     * @format date-time
+     */
+    quota_reset_at?: string;
+    owner_id: string;
+    owner?: ProjectOwnerData;
+    /**
+     * The most recent time when any endpoint of this project was active.
+     *
+     * Omitted when observed no activity for endpoints of this project.
+     * @format date-time
+     */
+    compute_last_active_at?: string;
+    /** @pattern ^[a-z0-9-]{1,60}$ */
+    org_id?: string;
+    /**
+     * A timestamp indicating when project update begins. If set, computes might experience a brief restart around this time.
+     * @format date-time
+     */
+    maintenance_scheduled_for?: string;
+    /**
+     * A timestamp indicating when HIPAA was enabled for this project
+     * @format date-time
+     */
+    hipaa_enabled_at?: string;
+}
+export interface ProjectCreateRequest {
+    project: {
+        settings?: ProjectSettingsData;
+        /**
+         * The project name. If not specified, the name will be identical to the generated project ID
+         * @minLength 1
+         * @maxLength 256
+         */
+        name?: string;
+        branch?: {
+            /**
+             * The default branch name. If not specified, the default branch name, `main`, will be used.
+             * @maxLength 256
+             */
+            name?: string;
+            /** The role name. If not specified, the default role name, `{database_name}_owner`, will be used. */
+            role_name?: string;
+            /** The database name. If not specified, the default database name, `neondb`, will be used. */
+            database_name?: string;
+            /** The annotations for the branch. */
+            annotations?: AnnotationValueData;
+        };
+        /**
+         * DEPRECATED, use default_endpoint_settings.autoscaling_limit_min_cu instead.
+         *
+         * The minimum number of Compute Units. The minimum value is `0.25`.
+         * See [Compute size and Autoscaling configuration](https://neon.tech/docs/manage/endpoints#compute-size-and-autoscaling-configuration)
+         * for more information.
+         * @deprecated
+         */
+        autoscaling_limit_min_cu?: ComputeUnit;
+        /**
+         * DEPRECATED, use default_endpoint_settings.autoscaling_limit_max_cu instead.
+         *
+         * The maximum number of Compute Units. See [Compute size and Autoscaling configuration](https://neon.tech/docs/manage/endpoints#compute-size-and-autoscaling-configuration)
+         * for more information.
+         * @deprecated
+         */
+        autoscaling_limit_max_cu?: ComputeUnit;
+        /**
+         * The Neon compute provisioner.
+         * Specify the `k8s-neonvm` provisioner to create a compute endpoint that supports Autoscaling.
+         *
+         * Provisioner can be one of the following values:
+         * * k8s-pod
+         * * k8s-neonvm
+         *
+         * Clients must expect, that any string value that is not documented in the description above should be treated as a error. UNKNOWN value if safe to treat as an error too.
+         */
+        provisioner?: Provisioner;
+        /** The region identifier. Refer to our [Regions](https://neon.tech/docs/introduction/regions) documentation for supported regions. Values are specified in this format: `aws-us-east-1` */
+        region_id?: string;
+        /** A collection of settings for a Neon endpoint */
+        default_endpoint_settings?: DefaultEndpointSettings;
+        /** The major Postgres version number. Currently supported versions are `14`, `15`, `16`, and `17`. */
+        pg_version?: PgVersion;
+        /** Whether or not passwords are stored for roles in the Neon project. Storing passwords facilitates access to Neon features that require authorization. */
+        store_passwords?: boolean;
+        /**
+         * The number of seconds to retain the shared history for all branches in this project.
+         * The default is 1 day (86400 seconds).
+         * @format int32
+         * @min 0
+         * @max 2592000
+         */
+        history_retention_seconds?: number;
+        /**
+         * Organization id in case the project created belongs to an organization.
+         * If not present, project is owned by a user and not by org.
+         * @pattern ^[a-z0-9-]{1,60}$
+         */
+        org_id?: string;
+    };
+}
+export interface ProjectUpdateRequest {
+    project: {
+        settings?: ProjectSettingsData;
+        /** The project name */
+        name?: string;
+        /** A collection of settings for a Neon endpoint */
+        default_endpoint_settings?: DefaultEndpointSettings;
+        /**
+         * The number of seconds to retain the shared history for all branches in this project.
+         * The default is 1 day (604800 seconds).
+         * @format int32
+         * @min 0
+         * @max 2592000
+         */
+        history_retention_seconds?: number;
+    };
+}
+export interface ProjectTransferRequestResponse {
+    /**
+     * The unique identifier for the transfer request
+     * @format uuid
+     */
+    id: string;
+    /**
+     * The ID of the project that is being transferred
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    project_id: string;
+    /**
+     * The timestamp when the transfer request was created
+     * @format date-time
+     */
+    created_at: string;
+    /**
+     * The timestamp when the transfer request will expire
+     * @format date-time
+     */
+    expires_at: string;
+}
+export interface ProjectSettingsData {
+    /**
+     * Per-project consumption quotas. If a quota is exceeded, all active computes
+     * are automatically suspended and cannot be started via API calls or incoming connections.
+     *
+     * The exception is `logical_size_bytes`, which is enforced per branch.
+     * If a branch exceeds its `logical_size_bytes` quota, computes can still be started,
+     * but write operations will fail—allowing data to be deleted to free up space.
+     * Computes on other branches are not affected.
+     *
+     * Setting `logical_size_bytes` overrides any lower value set by the `neon.max_cluster_size` Postgres setting.
+     *
+     * Quotas are enforced using per-project consumption metrics with the same names.
+     * These metrics reset at the start of each billing period. `logical_size_bytes`
+     * is also an exception—it reflects the total data stored in a branch and does not reset.
+     *
+     * A zero or empty quota value means “unlimited.”
+     */
+    quota?: ProjectQuota;
+    /**
+     * A list of IP addresses that are allowed to connect to the compute endpoint.
+     * If the list is empty or not set, all IP addresses are allowed.
+     * If protected_branches_only is true, the list will be applied only to protected branches.
+     */
+    allowed_ips?: AllowedIps;
+    /**
+     * Sets wal_level=logical for all compute endpoints in this project.
+     * All active endpoints will be suspended.
+     * Once enabled, logical replication cannot be disabled.
+     */
+    enable_logical_replication?: boolean;
+    /**
+     * A maintenance window is a time period during which Neon may perform maintenance on the project's infrastructure.
+     * During this time, the project's compute endpoints may be unavailable and existing connections can be
+     * interrupted.
+     */
+    maintenance_window?: MaintenanceWindow;
+    /**
+     * When set, connections from the public internet
+     * are disallowed. This supersedes the AllowedIPs list.
+     * This parameter is under active development and its semantics may change in the future.
+     */
+    block_public_connections?: boolean;
+    /**
+     * When set, connections using VPC endpoints are disallowed.
+     * This parameter is under active development and its semantics may change in the future.
+     */
+    block_vpc_connections?: boolean;
+    audit_log_level?: ProjectAuditLogLevel;
+    hipaa?: boolean;
+    /** The shared libraries to preload into the project's compute instances. */
+    preload_libraries?: PreloadLibraries;
+}
+export interface ProjectResponse {
+    project: Project;
+}
+export interface ProjectsResponse {
+    projects: ProjectListItem[];
+    /**
+     * A list of project IDs indicating which projects are known to exist, but whose details could not
+     * be fetched within the requested (or implicit) time limit
+     */
+    unavailable_project_ids?: string[];
+}
+export interface ProjectPermission {
+    id: string;
+    /**
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    granted_to_email: string;
+    /** @format date-time */
+    granted_at: string;
+    /** @format date-time */
+    revoked_at?: string;
+}
+export interface ProjectPermissions {
+    project_permissions: ProjectPermission[];
+}
+export interface GrantPermissionToProjectRequest {
+    /**
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    email: string;
+}
+export interface ConsumptionHistoryPerAccountResponse {
+    periods: ConsumptionHistoryPerPeriod[];
+}
+export interface ConsumptionHistoryPerProjectResponse {
+    projects: ConsumptionHistoryPerProject[];
+}
+export interface ConsumptionHistoryPerProject {
+    /**
+     * The project ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    project_id: string;
+    periods: ConsumptionHistoryPerPeriod[];
+}
+/** @example {"period_id":"79ec829f-1828-4006-ac82-9f1828a0067d","period_plan":"scale","period_start":"2024-03-01T00:00:00Z","consumption":[{"timeframe_start":"2024-03-22T00:00:00Z","timeframe_end":"2024-03-23T00:00:00Z","active_time_seconds":27853,"compute_time_seconds":18346,"written_data_bytes":1073741824,"synthetic_storage_size_bytes":5368709120},{"timeframe_start":"2024-03-23T00:00:00Z","timeframe_end":"2024-03-24T00:00:00Z","active_time_seconds":17498,"compute_time_seconds":3378,"written_data_bytes":5741824,"synthetic_storage_size_bytes":2370912}]} */
+export interface ConsumptionHistoryPerPeriod {
+    /**
+     * The ID assigned to the specified billing period.
+     * @format uuid
+     */
+    period_id: string;
+    /** The billing plan applicable during the billing period. */
+    period_plan: string;
+    /**
+     * The start date-time of the billing period.
+     * @format date-time
+     */
+    period_start: string;
+    /**
+     * The end date-time of the billing period, available for the past periods only.
+     * @format date-time
+     */
+    period_end?: string;
+    consumption: ConsumptionHistoryPerTimeframe[];
+}
+export interface ConsumptionHistoryPerTimeframe {
+    /**
+     * The specified start date-time for the reported consumption.
+     * @format date-time
+     */
+    timeframe_start: string;
+    /**
+     * The specified end date-time for the reported consumption.
+     * @format date-time
+     */
+    timeframe_end: string;
+    /**
+     * Seconds. The amount of time the compute endpoints have been active.
+     * @format uint64
+     */
+    active_time_seconds: number;
+    /**
+     * Seconds. The number of CPU seconds used by compute endpoints, including compute endpoints that have been deleted.
+     * @format uint64
+     */
+    compute_time_seconds: number;
+    /**
+     * Bytes. The amount of written data for all branches.
+     * @format uint64
+     */
+    written_data_bytes: number;
+    /**
+     * Bytes. The space occupied in storage. Synthetic storage size combines the logical data size and Write-Ahead Log (WAL) size for all branches.
+     * @format uint64
+     */
+    synthetic_storage_size_bytes: number;
+    /**
+     * Bytes-Hour. The amount of storage consumed hourly.
+     * @format uint64
+     */
+    data_storage_bytes_hour?: number;
+    /**
+     * Bytes. The amount of logical size consumed.
+     * @format uint64
+     */
+    logical_size_bytes?: number;
+    /**
+     * Bytes-Hour. The amount of logical size consumed hourly.
+     * @format uint64
+     */
+    logical_size_bytes_hour?: number;
+}
+export declare enum ConsumptionHistoryGranularity {
+    Hourly = "hourly",
+    Daily = "daily",
+    Monthly = "monthly"
+}
+export type ConsumptionHistoryQueryMetrics = string[];
+export interface ProjectLimits {
+    limits: Limits;
+    features: Features;
+}
+export interface Limits {
+    /** @format int64 */
+    active_time: number;
+    max_projects: number;
+    max_branches: number;
+    max_protected_branches: number;
+    /** @format float64 */
+    max_autoscaling_cu: number;
+    /** @format float64 */
+    max_fixed_size_cu: number;
+    /** @format int64 */
+    cpu_seconds: number;
+    /** @format int64 */
+    max_compute_time_non_primary: number;
+    max_active_endpoints: number;
+    max_read_only_endpoints: number;
+    max_allowed_ips: number;
+    max_vpc_endpoints_per_region: number;
+    max_monitoring_retention_hours: number;
+    /** @format int32 */
+    max_history_retention_seconds: number;
+    min_autosuspend_seconds: number;
+    /** @format int64 */
+    max_data_transfer: number;
+    /** @format int64 */
+    min_idle_seconds_to_autoarchive: number;
+    /** @format int64 */
+    min_age_seconds_to_autoarchive: number;
+    max_branch_roles: number;
+    max_branch_databases: number;
+    max_concurrent_scheduled_operation_chains_per_project: number;
+    max_concurrent_executing_operation_chains_per_project: number;
+    max_root_branches: number;
+    /** @format int64 */
+    max_import_size: number;
+    max_organization_members: number;
+    schema_only_branches_size_limit: number;
+    per_project: {
+        /** @format int64 */
+        compute_time_seconds: number;
+        /** @format int64 */
+        written_data_bytes: number;
+        /** @format int64 */
+        data_transfer_bytes: number;
+        suspend_default_branch: boolean;
+    };
+}
+export declare enum ProjectAuditLogLevel {
+    Base = "base",
+    Extended = "extended",
+    Full = "full"
+}
+export interface AvailablePreloadLibrary {
+    library_name: string;
+    description: string;
+    is_default: boolean;
+    is_experimental: boolean;
+    version: string;
+}
+export interface AvailablePreloadLibraries {
+    libraries?: AvailablePreloadLibrary[];
+}
+/** @example {"id":"br-wispy-meadow-118737","project_id":"spring-example-302709","parent_id":"br-aged-salad-637688","parent_lsn":"0/1DE2850","name":"dev2","protected":false,"current_state":"ready","state_changed_at":"2022-11-30T20:09:48Z","creation_source":"console","created_at":"2022-11-30T19:09:48Z","updated_at":"2022-12-01T19:53:05Z","default":true,"init_source":"parent-data"} */
+export interface Branch {
+    /**
+     * The branch ID. This value is generated when a branch is created. A `branch_id` value has a `br` prefix. For example: `br-small-term-683261`.
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    id: string;
+    /**
+     * The ID of the project to which the branch belongs
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    project_id: string;
+    /**
+     * The `branch_id` of the parent branch
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    parent_id?: string;
+    /**
+     * The Log Sequence Number (LSN) on the parent branch from which this branch was created.
+     * When restoring a branch using the [Restore branch](https://api-docs.neon.tech/reference/restoreprojectbranch) endpoint,
+     * this value isn’t finalized until all operations related to the restore have completed successfully.
+     */
+    parent_lsn?: string;
+    /**
+     * The point in time on the parent branch from which this branch was created.
+     * When restoring a branch using the [Restore branch](https://api-docs.neon.tech/reference/restoreprojectbranch) endpoint,
+     * this value isn’t finalized until all operations related to the restore have completed successfully.
+     * After all the operations completed, this value might stay empty.
+     * @format date-time
+     */
+    parent_timestamp?: string;
+    /** The branch name */
+    name: string;
+    /**
+     * The branch’s state, indicating if it is initializing, ready for use, or archived.
+     *   * 'init' - the branch is being created but is not available for querying.
+     *   * 'ready' - the branch is fully operational and ready for querying. Expect normal query response times.
+     *   * 'archived' - the branch is stored in cost-effective archival storage. Expect slow query response times.
+     */
+    current_state: BranchState;
+    /**
+     * The branch’s state, indicating if it is initializing, ready for use, or archived.
+     *   * 'init' - the branch is being created but is not available for querying.
+     *   * 'ready' - the branch is fully operational and ready for querying. Expect normal query response times.
+     *   * 'archived' - the branch is stored in cost-effective archival storage. Expect slow query response times.
+     */
+    pending_state?: BranchState;
+    /**
+     * A UTC timestamp indicating when the `current_state` began
+     * @format date-time
+     */
+    state_changed_at: string;
+    /**
+     * The logical size of the branch, in bytes
+     * @format int64
+     */
+    logical_size?: number;
+    /** The branch creation source */
+    creation_source: string;
+    /**
+     * DEPRECATED. Use `default` field.
+     * Whether the branch is the project's primary branch
+     * @deprecated
+     */
+    primary?: boolean;
+    /** Whether the branch is the project's default branch */
+    default: boolean;
+    /** Whether the branch is protected */
+    protected: boolean;
+    /**
+     * CPU seconds used by all of the branch's compute endpoints, including deleted ones.
+     * This value is reset at the beginning of each billing period.
+     * Examples:
+     * 1. A branch that uses 1 CPU for 1 second is equal to `cpu_used_sec=1`.
+     * 2. A branch that uses 2 CPUs simultaneously for 1 second is equal to `cpu_used_sec=2`.
+     * @deprecated
+     * @format int64
+     */
+    cpu_used_sec: number;
+    /** @format int64 */
+    compute_time_seconds: number;
+    /** @format int64 */
+    active_time_seconds: number;
+    /** @format int64 */
+    written_data_bytes: number;
+    /** @format int64 */
+    data_transfer_bytes: number;
+    /**
+     * A timestamp indicating when the branch was created
+     * @format date-time
+     */
+    created_at: string;
+    /**
+     * A timestamp indicating when the branch was last updated
+     * @format date-time
+     */
+    updated_at: string;
+    /**
+     * The time-to-live (TTL) duration originally configured for the branch, in seconds. This read-only value represents the interval between the time `expires_at` was set and the expiration timestamp itself. It is preserved to ensure the same TTL duration is reapplied when resetting the branch from its parent, and only updates when a new `expires_at` value is set.
+     *
+     * This feature is still under development and not yet generally available.
+     * @example 3600
+     */
+    ttl_interval_seconds?: number;
+    /**
+     * The timestamp when the branch is scheduled to expire and be automatically deleted. Must be set by the client following the [RFC 3339, section 5.6](https://tools.ietf.org/html/rfc3339#section-5.6) format with precision up to seconds (such as 2025-06-09T18:02:16Z). Deletion is performed by a background job and may not occur exactly at the specified time.
+     *
+     * This feature is still under development and not yet generally available.
+     * @format date-time
+     * @example "2025-06-09T18:02:16Z"
+     */
+    expires_at?: string;
+    /**
+     * A timestamp indicating when the branch was last reset
+     * @format date-time
+     */
+    last_reset_at?: string;
+    /** The resolved user model that contains details of the user/org/integration/api_key used for branch creation. This field is filled only in listing/get/create/get/update/delete methods, if it is empty when calling other handlers, it does not mean that it is empty in the system. */
+    created_by?: {
+        /** The name of the user. */
+        name?: string;
+        /** The URL to the user's avatar image. */
+        image?: string;
+    };
+    /**
+     * The source of initialization for the branch. Valid values are `schema-only` and `parent-data` (default).
+     *   * `schema-only` - creates a new root branch containing only the schema. Use `parent_id` to specify the source branch. Optionally, you can provide `parent_lsn` or `parent_timestamp` to branch from a specific point in time or LSN. These fields define which branch to copy the schema from and at what point—they do not establish a parent-child relationship between the `parent_id` branch and the new schema-only branch.
+     *   * `parent-data` - creates the branch with both schema and data from the parent.
+     */
+    init_source?: string;
+    /**
+     * Could be `restored`, `finalized` or `detaching`.
+     * A `restored` branch becomes permanently `finalized` when you call `finalizeRestoreBranch`
+     * A `restored` or `finalized` branch may begin `detaching` as a one-time performance optimisation, after which it will continue in its original state
+     */
+    restore_status?: BranchRestoreStatus;
+    /** ID of the snapshot that was the restore source for this branch */
+    restored_from?: string;
+}
+/**
+ * The branch’s state, indicating if it is initializing, ready for use, or archived.
+ *   * 'init' - the branch is being created but is not available for querying.
+ *   * 'ready' - the branch is fully operational and ready for querying. Expect normal query response times.
+ *   * 'archived' - the branch is stored in cost-effective archival storage. Expect slow query response times.
+ */
+export type BranchState = string;
+/**
+ * Could be `restored`, `finalized` or `detaching`.
+ * A `restored` branch becomes permanently `finalized` when you call `finalizeRestoreBranch`
+ * A `restored` or `finalized` branch may begin `detaching` as a one-time performance optimisation, after which it will continue in its original state
+ */
+export type BranchRestoreStatus = string;
+export interface BranchCreateRequestEndpointOptions {
+    /** The compute endpoint type. Either `read_write` or `read_only`. */
+    type: EndpointType;
+    /**
+     * The minimum number of Compute Units. The minimum value is `0.25`.
+     *     See [Compute size and Autoscaling configuration](https://neon.tech/docs/manage/endpoints#compute-size-and-autoscaling-configuration)
+     *     for more information.
+     */
+    autoscaling_limit_min_cu?: ComputeUnit;
+    /**
+     * The maximum number of Compute Units.
+     *     See [Compute size and Autoscaling configuration](https://neon.tech/docs/manage/endpoints#compute-size-and-autoscaling-configuration)
+     *     for more information.
+     */
+    autoscaling_limit_max_cu?: ComputeUnit;
+    /**
+     * The Neon compute provisioner.
+     * Specify the `k8s-neonvm` provisioner to create a compute endpoint that supports Autoscaling.
+     *
+     * Provisioner can be one of the following values:
+     * * k8s-pod
+     * * k8s-neonvm
+     *
+     * Clients must expect, that any string value that is not documented in the description above should be treated as a error. UNKNOWN value if safe to treat as an error too.
+     */
+    provisioner?: Provisioner;
+    /**
+     * Duration of inactivity in seconds after which the compute endpoint is
+     * automatically suspended. The value `0` means use the default value.
+     * The value `-1` means never suspend. The default value is `300` seconds (5 minutes).
+     * The minimum value is `60` seconds (1 minute).
+     * The maximum value is `604800` seconds (1 week). For more information, see
+     * [Scale to zero configuration](https://neon.tech/docs/manage/endpoints#scale-to-zero-configuration).
+     */
+    suspend_timeout_seconds?: SuspendTimeoutSeconds;
+}
+export interface BranchCreateRequest {
+    endpoints?: BranchCreateRequestEndpointOptions[];
+    branch?: {
+        /**
+         * The `branch_id` of the parent branch. If omitted or empty, the branch will be created from the project's default branch.
+         * @pattern ^[a-z0-9-]{1,60}$
+         */
+        parent_id?: string;
+        /**
+         * The branch name
+         * @maxLength 256
+         */
+        name?: string;
+        /** A Log Sequence Number (LSN) on the parent branch. The branch will be created with data from this LSN. */
+        parent_lsn?: string;
+        /**
+         * A timestamp identifying a point in time on the parent branch. The branch will be created with data starting from this point in time.
+         * The timestamp must be provided in ISO 8601 format; for example: `2024-02-26T12:00:00Z`.
+         * @format date-time
+         */
+        parent_timestamp?: string;
+        /** Whether the branch is protected */
+        protected?: boolean;
+        /** Whether to create the branch as archived */
+        archived?: boolean;
+        /**
+         * The source of initialization for the branch. Valid values are `schema-only` and `parent-data` (default).
+         *   * `schema-only` - creates a new root branch containing only the schema. Use `parent_id` to specify the source branch. Optionally, you can provide `parent_lsn` or `parent_timestamp` to branch from a specific point in time or LSN. These fields define which branch to copy the schema from and at what point—they do not establish a parent-child relationship between the `parent_id` branch and the new schema-only branch.
+         *   * `parent-data` - creates the branch with both schema and data from the parent.
+         */
+        init_source?: string;
+        /**
+         * The timestamp when the branch is scheduled to expire and be automatically deleted. Must be set by the client following the [RFC 3339, section 5.6](https://tools.ietf.org/html/rfc3339#section-5.6) format with precision up to seconds (such as 2025-06-09T18:02:16Z). Deletion is performed by a background job and may not occur exactly at the specified time.
+         *
+         * This feature is still under development and not yet generally available.
+         * @format date-time
+         * @example "2025-06-09T18:02:16Z"
+         */
+        expires_at?: string;
+    };
+}
+export interface BranchUpdateRequest {
+    branch: {
+        /** @maxLength 256 */
+        name?: string;
+        protected?: boolean;
+        /**
+         * The timestamp when the branch is scheduled to expire and be automatically deleted. Must be set by the client following the [RFC 3339, section 5.6](https://tools.ietf.org/html/rfc3339#section-5.6) format with precision up to seconds (such as 2025-06-09T18:02:16Z). Deletion is performed by a background job and may not occur exactly at the specified time. If this field is set to null, the expiration timestamp is removed.
+         *
+         * This feature is still under development and not yet generally available.
+         * @format date-time
+         * @example "2025-06-09T18:02:16Z"
+         */
+        expires_at?: string | null;
+    };
+}
+export interface BranchRestoreRequest {
+    /**
+     * The `branch_id` of the restore source branch.
+     * If `source_timestamp` and `source_lsn` are omitted, the branch will be restored to head.
+     * If `source_branch_id` is equal to the branch's id, `source_timestamp` or `source_lsn` is required.
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    source_branch_id: string;
+    /** A Log Sequence Number (LSN) on the source branch. The branch will be restored with data from this LSN. */
+    source_lsn?: string;
+    /**
+     * A timestamp identifying a point in time on the source branch. The branch will be restored with data starting from this point in time.
+     * The timestamp must be provided in ISO 8601 format; for example: `2024-02-26T12:00:00Z`.
+     * @format date-time
+     */
+    source_timestamp?: string;
+    /**
+     * If not empty, the previous state of the branch will be saved to a branch with this name.
+     * If the branch has children or the `source_branch_id` is equal to the branch id, this field is required. All existing child branches will be moved to the newly created branch under the name `preserve_under_name`.
+     */
+    preserve_under_name?: string;
+}
+export interface BranchResponse {
+    branch: Branch;
+}
+export interface BranchSchemaResponse {
+    sql?: string;
+    json?: BranchSchemaJSON;
+}
+export interface BranchSchemaCompareResponse {
+    diff?: string;
+}
+export interface BranchesResponse {
+    branches: Branch[];
+}
+export interface BranchesCountResponse {
+    /** @format int */
+    count: number;
+}
+export interface ConnectionParameters {
+    /** Database name */
+    database: string;
+    /** Password for the role */
+    password: string;
+    /** Role name */
+    role: string;
+    /** Hostname */
+    host: string;
+    /** Pooler hostname */
+    pooler_host: string;
+}
+export interface ConnectionDetails {
+    /**
+     * The connection URI is defined as specified here: [Connection URIs](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS)
+     * The connection URI can be used to connect to a Postgres database with psql or defined in a DATABASE_URL environment variable.
+     * When creating a branch from a parent with more than one role or database, the response body does not include a connection URI.
+     */
+    connection_uri: string;
+    connection_parameters: ConnectionParameters;
+}
+export interface ConnectionURIResponse {
+    /** The connection URI. */
+    uri: string;
+}
+/** @example {"host":"ep-silent-smoke-806639.us-east-2.aws.neon.tech","id":"ep-silent-smoke-806639","name":"My cool compute","project_id":"spring-example-302709","branch_id":"br-wispy-meadow-118737","autoscaling_limit_min_cu":1,"autoscaling_limit_max_cu":1,"region_id":"aws-us-east-2","type":"read_write","current_state":"init","pending_state":"active","settings":{"pg_settings":{}},"pooler_enabled":false,"pooler_mode":"transaction","disabled":false,"passwordless_access":true,"creation_source":"console","created_at":"2022-12-03T15:37:07Z","updated_at":"2022-12-03T15:37:07Z","proxy_host":"us-east-2.aws.neon.tech","suspend_timeout_seconds":0} */
+export interface Endpoint {
+    /** The hostname of the compute endpoint. This is the hostname specified when connecting to a Neon database. */
+    host: string;
+    /**
+     * The compute endpoint ID. Compute endpoint IDs have an `ep-` prefix. For example: `ep-little-smoke-851426`
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    id: string;
+    /** Optional name of the compute endpoint */
+    name?: string;
+    /**
+     * The ID of the project to which the compute endpoint belongs
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    project_id: string;
+    /**
+     * The ID of the branch that the compute endpoint is associated with
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    branch_id: string;
+    /** The minimum number of Compute Units */
+    autoscaling_limit_min_cu: ComputeUnit;
+    /** The maximum number of Compute Units */
+    autoscaling_limit_max_cu: ComputeUnit;
+    /** The region identifier */
+    region_id: string;
+    /** The compute endpoint type. Either `read_write` or `read_only`. */
+    type: EndpointType;
+    /** The state of the compute endpoint */
+    current_state: EndpointState;
+    /** The state of the compute endpoint */
+    pending_state?: EndpointState;
+    /** A collection of settings for a compute endpoint */
+    settings: EndpointSettingsData;
+    /** Whether connection pooling is enabled for the compute endpoint */
+    pooler_enabled: boolean;
+    /** The connection pooler mode. Neon supports PgBouncer in `transaction` mode only. */
+    pooler_mode: EndpointPoolerMode;
+    /**
+     * Whether to restrict connections to the compute endpoint.
+     * Enabling this option schedules a suspend compute operation.
+     * A disabled compute endpoint cannot be enabled by a connection or
+     * console action.
+     */
+    disabled: boolean;
+    /** Whether to permit passwordless access to the compute endpoint */
+    passwordless_access: boolean;
+    /**
+     * A timestamp indicating when the compute endpoint was last active
+     * @format date-time
+     */
+    last_active?: string;
+    /** The compute endpoint creation source */
+    creation_source: string;
+    /**
+     * A timestamp indicating when the compute endpoint was created
+     * @format date-time
+     */
+    created_at: string;
+    /**
+     * A timestamp indicating when the compute endpoint was last updated
+     * @format date-time
+     */
+    updated_at: string;
+    /**
+     * A timestamp indicating when the compute endpoint was last started
+     * @format date-time
+     */
+    started_at?: string;
+    /**
+     * A timestamp indicating when the compute endpoint was last suspended
+     * @format date-time
+     */
+    suspended_at?: string;
+    /** DEPRECATED. Use the "host" property instead. */
+    proxy_host: string;
+    /**
+     * Duration of inactivity in seconds after which the compute endpoint is
+     * automatically suspended. The value `0` means use the default value.
+     * The value `-1` means never suspend. The default value is `300` seconds (5 minutes).
+     * The minimum value is `60` seconds (1 minute).
+     * The maximum value is `604800` seconds (1 week). For more information, see
+     * [Scale to zero configuration](https://neon.tech/docs/manage/endpoints#scale-to-zero-configuration).
+     */
+    suspend_timeout_seconds: SuspendTimeoutSeconds;
+    /**
+     * The Neon compute provisioner.
+     * Specify the `k8s-neonvm` provisioner to create a compute endpoint that supports Autoscaling.
+     *
+     * Provisioner can be one of the following values:
+     * * k8s-pod
+     * * k8s-neonvm
+     *
+     * Clients must expect, that any string value that is not documented in the description above should be treated as a error. UNKNOWN value if safe to treat as an error too.
+     */
+    provisioner: Provisioner;
+    /** Attached compute's release version number. */
+    compute_release_version?: string;
+}
+/** The state of the compute endpoint */
+export declare enum EndpointState {
+    Init = "init",
+    Active = "active",
+    Idle = "idle"
+}
+/** The compute endpoint type. Either `read_write` or `read_only`. */
+export declare enum EndpointType {
+    ReadOnly = "read_only",
+    ReadWrite = "read_write"
+}
+/** The connection pooler mode. Neon supports PgBouncer in `transaction` mode only. */
+export declare enum EndpointPoolerMode {
+    Transaction = "transaction"
+}
+/**
+ * Duration of inactivity in seconds after which the compute endpoint is
+ * automatically suspended. The value `0` means use the default value.
+ * The value `-1` means never suspend. The default value is `300` seconds (5 minutes).
+ * The minimum value is `60` seconds (1 minute).
+ * The maximum value is `604800` seconds (1 week). For more information, see
+ * [Scale to zero configuration](https://neon.tech/docs/manage/endpoints#scale-to-zero-configuration).
+ * @format int64
+ * @min -1
+ * @max 604800
+ */
+export type SuspendTimeoutSeconds = number;
+/**
+ * A list of IP addresses that are allowed to connect to the compute endpoint.
+ * If the list is empty or not set, all IP addresses are allowed.
+ * If protected_branches_only is true, the list will be applied only to protected branches.
+ */
+export interface AllowedIps {
+    /** A list of IP addresses that are allowed to connect to the endpoint. */
+    ips?: string[];
+    /** If true, the list will be applied only to protected branches. */
+    protected_branches_only?: boolean;
+}
+/**
+ * A maintenance window is a time period during which Neon may perform maintenance on the project's infrastructure.
+ * During this time, the project's compute endpoints may be unavailable and existing connections can be
+ * interrupted.
+ */
+export interface MaintenanceWindow {
+    /**
+     * A list of weekdays when the maintenance window is active.
+     * Encoded as ints, where 1 - Monday, and 7 - Sunday.
+     */
+    weekdays: number[];
+    /** Start time of the maintenance window, in the format of "HH:MM". Uses UTC. */
+    start_time: string;
+    /** End time of the maintenance window, in the format of "HH:MM". Uses UTC. */
+    end_time: string;
+}
+/** The shared libraries to preload into the project's compute instances. */
+export interface PreloadLibraries {
+    use_defaults?: boolean;
+    enabled_libraries?: string[];
+}
+export interface EndpointCreateRequest {
+    endpoint: {
+        /**
+         * The ID of the branch the compute endpoint will be associated with
+         * @pattern ^[a-z0-9-]{1,60}$
+         */
+        branch_id: string;
+        /** The region where the compute endpoint will be created. Only the project's `region_id` is permitted. */
+        region_id?: string;
+        /** The compute endpoint type. Either `read_write` or `read_only`. */
+        type: EndpointType;
+        /** A collection of settings for a compute endpoint */
+        settings?: EndpointSettingsData;
+        /**
+         * The minimum number of Compute Units. The minimum value is `0.25`.
+         * See [Compute size and Autoscaling configuration](https://neon.tech/docs/manage/endpoints#compute-size-and-autoscaling-configuration)
+         * for more information.
+         */
+        autoscaling_limit_min_cu?: ComputeUnit;
+        /**
+         * The maximum number of Compute Units.
+         * See [Compute size and Autoscaling configuration](https://neon.tech/docs/manage/endpoints#compute-size-and-autoscaling-configuration)
+         * for more information.
+         */
+        autoscaling_limit_max_cu?: ComputeUnit;
+        /**
+         * The Neon compute provisioner.
+         * Specify the `k8s-neonvm` provisioner to create a compute endpoint that supports Autoscaling.
+         *
+         * Provisioner can be one of the following values:
+         * * k8s-pod
+         * * k8s-neonvm
+         *
+         * Clients must expect, that any string value that is not documented in the description above should be treated as a error. UNKNOWN value if safe to treat as an error too.
+         */
+        provisioner?: Provisioner;
+        /**
+         * Whether to enable connection pooling for the compute endpoint
+         * @deprecated
+         */
+        pooler_enabled?: boolean;
+        /** The connection pooler mode. Neon supports PgBouncer in `transaction` mode only. */
+        pooler_mode?: EndpointPoolerMode;
+        /**
+         * Whether to restrict connections to the compute endpoint.
+         * Enabling this option schedules a suspend compute operation.
+         * A disabled compute endpoint cannot be enabled by a connection or
+         * console action. However, the compute endpoint is periodically
+         * enabled by check_availability operations.
+         */
+        disabled?: boolean;
+        /** NOT YET IMPLEMENTED. Whether to permit passwordless access to the compute endpoint. */
+        passwordless_access?: boolean;
+        /**
+         * Duration of inactivity in seconds after which the compute endpoint is
+         * automatically suspended. The value `0` means use the default value.
+         * The value `-1` means never suspend. The default value is `300` seconds (5 minutes).
+         * The minimum value is `60` seconds (1 minute).
+         * The maximum value is `604800` seconds (1 week). For more information, see
+         * [Scale to zero configuration](https://neon.tech/docs/manage/endpoints#scale-to-zero-configuration).
+         */
+        suspend_timeout_seconds?: SuspendTimeoutSeconds;
+        /**
+         * Optional name of the compute endpoint
+         * @minLength 1
+         * @maxLength 64
+         */
+        name?: string;
+    };
+}
+export interface EndpointUpdateRequest {
+    endpoint: {
+        /**
+         * DEPRECATED: This field will be removed in a future release.
+         * The destination branch ID. The destination branch must not have an existing read-write endpoint.
+         * @deprecated
+         * @pattern ^[a-z0-9-]{1,60}$
+         */
+        branch_id?: string;
+        /**
+         * The minimum number of Compute Units. The minimum value is `0.25`.
+         * See [Compute size and Autoscaling configuration](https://neon.tech/docs/manage/endpoints#compute-size-and-autoscaling-configuration)
+         * for more information.
+         */
+        autoscaling_limit_min_cu?: ComputeUnit;
+        /**
+         * The maximum number of Compute Units.
+         * See [Compute size and Autoscaling configuration](https://neon.tech/docs/manage/endpoints#compute-size-and-autoscaling-configuration)
+         * for more information.
+         */
+        autoscaling_limit_max_cu?: ComputeUnit;
+        /**
+         * The Neon compute provisioner.
+         * Specify the `k8s-neonvm` provisioner to create a compute endpoint that supports Autoscaling.
+         *
+         * Provisioner can be one of the following values:
+         * * k8s-pod
+         * * k8s-neonvm
+         *
+         * Clients must expect, that any string value that is not documented in the description above should be treated as a error. UNKNOWN value if safe to treat as an error too.
+         */
+        provisioner?: Provisioner;
+        /** A collection of settings for a compute endpoint */
+        settings?: EndpointSettingsData;
+        /**
+         * Whether to enable connection pooling for the compute endpoint
+         * @deprecated
+         */
+        pooler_enabled?: boolean;
+        /** The connection pooler mode. Neon supports PgBouncer in `transaction` mode only. */
+        pooler_mode?: EndpointPoolerMode;
+        /**
+         * Whether to restrict connections to the compute endpoint.
+         * Enabling this option schedules a suspend compute operation.
+         * A disabled compute endpoint cannot be enabled by a connection or
+         * console action. However, the compute endpoint is periodically
+         * enabled by check_availability operations.
+         */
+        disabled?: boolean;
+        /** NOT YET IMPLEMENTED. Whether to permit passwordless access to the compute endpoint. */
+        passwordless_access?: boolean;
+        /**
+         * Duration of inactivity in seconds after which the compute endpoint is
+         * automatically suspended. The value `0` means use the default value.
+         * The value `-1` means never suspend. The default value is `300` seconds (5 minutes).
+         * The minimum value is `60` seconds (1 minute).
+         * The maximum value is `604800` seconds (1 week). For more information, see
+         * [Scale to zero configuration](https://neon.tech/docs/manage/endpoints#scale-to-zero-configuration).
+         */
+        suspend_timeout_seconds?: SuspendTimeoutSeconds;
+        /**
+         * Optional name of the compute endpoint
+         * @minLength 1
+         * @maxLength 64
+         */
+        name?: string;
+    };
+}
+export interface EndpointResponse {
+    endpoint: Endpoint;
+}
+export interface ConnectionURIsResponse {
+    connection_uris: ConnectionDetails[];
+}
+export interface ConnectionURIsOptionalResponse {
+    connection_uris?: ConnectionDetails[];
+}
+export interface VPCEndpointsResponse {
+    endpoints: VPCEndpoint[];
+}
+export interface VPCEndpointsWithRegionResponse {
+    endpoints: VPCEndpointWithRegion[];
+}
+export interface VPCEndpoint {
+    /** The VPC endpoint ID */
+    vpc_endpoint_id: string;
+    /** A descriptive label for the VPC endpoint */
+    label: string;
+}
+export type VPCEndpointWithRegion = VPCEndpoint & {
+    /** The region where the VPC endpoint is located */
+    region_id: string;
+};
+export interface VPCEndpointDetails {
+    /** The VPC endpoint ID */
+    vpc_endpoint_id: string;
+    /** A descriptive label for the VPC endpoint */
+    label: string;
+    /**
+     * The current state of the VPC endpoint. Possible values are
+     * `new` (just configured, pending acceptance) or `accepted`
+     * (VPC connection was accepted by Neon).
+     */
+    state: string;
+    /** The number of projects that are restricted to use this VPC endpoint. */
+    num_restricted_projects: number;
+    /**
+     * A list of example projects that are restricted to use this VPC endpoint.
+     * There are at most 3 projects in the list, even if more projects are restricted.
+     */
+    example_restricted_projects: string[];
+}
+export interface VPCEndpointAssignment {
+    label: string;
+}
+export interface EndpointsResponse {
+    endpoints: Endpoint[];
+}
+export interface EndpointsOptionalResponse {
+    endpoints?: Endpoint[];
+}
+export interface EndpointPasswordlessSessionAuthRequest {
+    session_id: string;
+}
+/**
+ * A Duration represents the elapsed time between two instants
+ * as an int64 nanosecond count. The representation limits the
+ * largest representable duration to approximately 290 years.
+ * @format int64
+ */
+export type Duration = number;
+export interface StatementResult {
+    data?: StatementData;
+    error?: string;
+    explain_data?: ExplainData[];
+    query: string;
+}
+export interface StatementData {
+    fields?: string[];
+    rows?: string[][];
+    truncated: boolean;
+}
+export interface ExplainData {
+    'QUERY PLAN': string;
+}
+/** @example {"branch_id":"br-wispy-meadow-118737","name":"casey","protected":false,"created_at":"2022-11-23T17:42:25Z","updated_at":"2022-11-23T17:42:25Z"} */
+export interface Role {
+    /**
+     * The ID of the branch to which the role belongs
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    branch_id: string;
+    /** The role name */
+    name: string;
+    /** The role password */
+    password?: string;
+    /** Whether or not the role is system-protected */
+    protected?: boolean;
+    /**
+     * A timestamp indicating when the role was created
+     * @format date-time
+     */
+    created_at: string;
+    /**
+     * A timestamp indicating when the role was last updated
+     * @format date-time
+     */
+    updated_at: string;
+}
+export interface RoleCreateRequest {
+    role: {
+        /** The role name. Cannot exceed 63 bytes in length. */
+        name: string;
+        /** Whether to create a role that cannot login. */
+        no_login?: boolean;
+    };
+}
+export interface RoleResponse {
+    role: Role;
+}
+export interface JWKSResponse {
+    jwks: JWKS;
+}
+export interface RolesResponse {
+    roles: Role[];
+}
+export interface RolePasswordResponse {
+    /** The role password */
+    password: string;
+}
+export interface PaymentSourceBankCard {
+    /** Last 4 digits of the card. */
+    last4: string;
+    /** Brand of credit card. */
+    brand?: 'amex' | 'diners' | 'discover' | 'jcb' | 'mastercard' | 'unionpay' | 'unknown' | 'visa';
+    /**
+     * Credit card expiration month
+     * @format int64
+     */
+    exp_month?: number;
+    /**
+     * Credit card expiration year
+     * @format int64
+     */
+    exp_year?: number;
+}
+export interface PaymentSource {
+    /** Type of payment source. E.g. "card". */
+    type: string;
+    card?: PaymentSourceBankCard;
+}
+export interface BillingAccount {
+    /** State of the billing account. */
+    state: BillingAccountState;
+    payment_source: PaymentSource;
+    /**
+     * Type of subscription to Neon Cloud.
+     * Notice that for users without billing account this will be "UNKNOWN"
+     */
+    subscription_type: BillingSubscriptionType;
+    /** Indicates whether and how an account makes payments. */
+    payment_method: BillingPaymentMethod;
+    /**
+     * The last time the quota was reset. Defaults to the date-time the account is created.
+     * @format date-time
+     */
+    quota_reset_at_last: string;
+    /** The full name of the individual or entity that owns the billing account. This name appears on invoices. */
+    name: string;
+    /**
+     * Billing email, to receive emails related to invoices and subscriptions.
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    email: string;
+    /** Billing address city. */
+    address_city: string;
+    /** Billing address country code defined by ISO 3166-1 alpha-2. */
+    address_country: string;
+    /** Billing address country name. */
+    address_country_name?: string;
+    /** Billing address line 1. */
+    address_line1: string;
+    /** Billing address line 2. */
+    address_line2: string;
+    /** Billing address postal code. */
+    address_postal_code: string;
+    /** Billing address state or region. */
+    address_state: string;
+    /** Orb user portal url */
+    orb_portal_url?: string;
+    /** The tax identification number for the billing account, displayed on invoices. */
+    tax_id?: string;
+    /** The type of the tax identification number based on the country. */
+    tax_id_type?: string;
+}
+/** State of the billing account. */
+export declare enum BillingAccountState {
+    UNKNOWN = "UNKNOWN",
+    Active = "active",
+    Suspended = "suspended",
+    Deactivated = "deactivated",
+    Deleted = "deleted"
+}
+/**
+ * Type of subscription to Neon Cloud.
+ * Notice that for users without billing account this will be "UNKNOWN"
+ */
+export declare enum BillingSubscriptionType {
+    UNKNOWN = "UNKNOWN",
+    DirectSales = "direct_sales",
+    AwsMarketplace = "aws_marketplace",
+    FreeV2 = "free_v2",
+    FreeV3 = "free_v3",
+    ServerlessV3 = "serverless_v3",
+    Launch = "launch",
+    Scale = "scale",
+    Business = "business",
+    BusinessV3 = "business_v3",
+    VercelPgLegacy = "vercel_pg_legacy"
+}
+/** Indicates whether and how an account makes payments. */
+export declare enum BillingPaymentMethod {
+    UNKNOWN = "UNKNOWN",
+    None = "none",
+    Stripe = "stripe",
+    DirectPayment = "direct_payment",
+    AwsMp = "aws_mp",
+    AzureMp = "azure_mp",
+    VercelMp = "vercel_mp",
+    Staff = "staff",
+    Trial = "trial",
+    Sponsorship = "sponsorship"
+}
+/** @example {"id":834686,"branch_id":"br-wispy-meadow-118737","name":"neondb","owner_name":"casey","created_at":"2022-11-30T18:25:15Z","updated_at":"2022-11-30T18:25:15Z"} */
+export interface Database {
+    /**
+     * The database ID
+     * @format int64
+     */
+    id: number;
+    /**
+     * The ID of the branch to which the database belongs
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    branch_id: string;
+    /** The database name */
+    name: string;
+    /** The name of role that owns the database */
+    owner_name: string;
+    /**
+     * A timestamp indicating when the database was created
+     * @format date-time
+     */
+    created_at: string;
+    /**
+     * A timestamp indicating when the database was last updated
+     * @format date-time
+     */
+    updated_at: string;
+}
+export interface DatabaseCreateRequest {
+    database: {
+        /** The name of the database */
+        name: string;
+        /** The name of the role that owns the database */
+        owner_name: string;
+    };
+}
+export interface DatabaseUpdateRequest {
+    database: {
+        /** The name of the database */
+        name?: string;
+        /** The name of the role that owns the database */
+        owner_name?: string;
+    };
+}
+export interface DatabaseResponse {
+    database: Database;
+}
+export interface DatabasesResponse {
+    databases: Database[];
+}
+export interface Invitation {
+    /** @format uuid */
+    id: string;
+    /**
+     * Email of the invited user
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    email: string;
+    /**
+     * Organization id as it is stored in Neon
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    org_id: string;
+    /**
+     * UUID for the user_id who extended the invitation
+     * @format uuid
+     */
+    invited_by: string;
+    /**
+     * Timestamp when the invitation was created
+     * @format date-time
+     */
+    invited_at: string;
+    /** The role of the organization member */
+    role: MemberRole;
+}
+/** The role of the organization member */
+export declare enum MemberRole {
+    Admin = "admin",
+    Member = "member"
+}
+export interface Member {
+    /** @format uuid */
+    id: string;
+    /** @format uuid */
+    user_id: string;
+    /** @pattern ^[a-z0-9-]{1,60}$ */
+    org_id: string;
+    /** The role of the organization member */
+    role: MemberRole;
+    /** @format date-time */
+    joined_at?: string;
+}
+export interface MemberUserInfo {
+    /**
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    email: string;
+}
+export interface MemberWithUser {
+    member: Member;
+    user: MemberUserInfo;
+}
+export interface Organization {
+    /** @pattern ^[a-z0-9-]{1,60}$ */
+    id: string;
+    name: string;
+    handle: string;
+    plan: string;
+    /**
+     * A timestamp indicting when the organization was created
+     * @format date-time
+     */
+    created_at: string;
+    /**
+     * Organizations created via the Console or the API are managed by `console`.
+     * Organizations created by other methods can't be deleted via the Console or the API.
+     */
+    managed_by: string;
+    /**
+     * A timestamp indicating when the organization was updated
+     * @format date-time
+     */
+    updated_at: string;
+    /** If true, allow account to mark projects as HIPAA */
+    allow_hipaa_projects?: boolean;
+}
+export interface OrganizationsResponse {
+    organizations: Organization[];
+}
+export interface OrganizationsUpdateRequest {
+    /** @maxLength 64 */
+    name: string;
+}
+export interface OrganizationInvitationsResponse {
+    invitations: Invitation[];
+}
+export interface OrganizationInviteCreateRequest {
+    /**
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    email: string;
+    /** The role of the organization member */
+    role: MemberRole;
+}
+export interface OrganizationInvitesCreateRequest {
+    invitations: OrganizationInviteCreateRequest[];
+}
+export interface OrganizationInviteUpdateRequest {
+    /**
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    email?: string;
+    /** The role of the organization member */
+    role?: MemberRole;
+    resend?: boolean;
+}
+/** A list of details for guests of an organization */
+export type OrganizationGuestsResponse = OrganizationGuest[];
+/**
+ * Details of an organization guest, who is not directly a member of
+ * an organization but has been shared one of the projects it owns
+ */
+export interface OrganizationGuest {
+    permission_id: string;
+    /**
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    user_email: string;
+    /** @pattern ^[a-z0-9-]{1,60}$ */
+    project_id: string;
+    project_name: string;
+}
+export interface OrganizationMemberUpdateRequest {
+    /** The role of the organization member */
+    role: MemberRole;
+}
+export interface OrganizationMembersResponse {
+    members: MemberWithUser[];
+}
+export interface InvitationCreateRequest {
+    /**
+     * Email to invite
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    email: string;
+    /** The role of the organization member */
+    role: MemberRole;
+}
+export interface OrganizationCreateRequest {
+    organization: {
+        /**
+         * The organization name
+         * @maxLength 64
+         */
+        name?: string;
+        /** Emails with roles to invite to the organization */
+        invitations?: InvitationCreateRequest[];
+    };
+    /**
+     * Type of subscription to Neon Cloud.
+     * Notice that for users without billing account this will be "UNKNOWN"
+     */
+    subscription_type: BillingSubscriptionType;
+    /** Whether to transfer credits from the user account to the newly created organization account. */
+    transfer_credits?: boolean;
+}
+export interface ActiveRegionsResponse {
+    /** The list of active regions */
+    regions: RegionResponse[];
+}
+export interface RegionResponse {
+    /** The region ID as used in other API endpoints */
+    region_id: string;
+    /** A short description of the region. */
+    name: string;
+    /** Whether this region is used by default in new projects. */
+    default: boolean;
+    /** The geographical latitude (approximate) for the region. Empty if unknown. */
+    geo_lat: string;
+    /** The geographical longitude (approximate) for the region. Empty if unknown. */
+    geo_long: string;
+}
+export interface CurrentUserAuthAccount {
+    /**
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    email: string;
+    image: string;
+    /**
+     * DEPRECATED. Use `email` field.
+     * @deprecated
+     */
+    login: string;
+    name: string;
+    /** Identity provider id from keycloak */
+    provider: IdentityProviderId;
+}
+export interface LinkedAuthAccount {
+    /** Identity provider id from keycloak */
+    provider: IdentityProviderId;
+    provider_display_name: string;
+    username: string;
+}
+export interface UpdateUserInfoRequest {
+    /**
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    email?: string;
+    /** @format uuid */
+    id: string;
+    /**
+     * DEPRECATED. This field is ignored.
+     * @deprecated
+     */
+    image?: string;
+    first_name?: string;
+    last_name?: string;
+    password?: string;
+    new_password?: string;
+}
+export interface CurrentUserInfoResponse {
+    /**
+     * Control plane observes active endpoints of a user this amount of wall-clock time.
+     * @format int64
+     */
+    active_seconds_limit: number;
+    billing_account?: BillingAccount;
+    auth_accounts: CurrentUserAuthAccount[];
+    /**
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    email: string;
+    id: string;
+    image: string;
+    /**
+     * DEPRECATED. Use `email` field.
+     * @deprecated
+     */
+    login: string;
+    name: string;
+    last_name: string;
+    /** @format int64 */
+    projects_limit: number;
+    /** @format int64 */
+    branches_limit: number;
+    max_autoscaling_limit: ComputeUnit;
+    /** @format int64 */
+    compute_seconds_limit?: number;
+    plan: string;
+}
+export interface ConvertUserToOrgRequest {
+    /** @maxLength 64 */
+    name: string;
+}
+export interface CurrentUserInfoAuthResponse {
+    password_stored: boolean;
+    auth_accounts: CurrentUserAuthAccount[];
+    linked_accounts: LinkedAuthAccount[];
+    provider: string;
+}
+export interface AuthDetailsResponse {
+    account_id: string;
+    auth_method: 'keycloak' | 'session_cookie' | 'api_key_user' | 'api_key_org' | 'oauth';
+    auth_data?: string;
+}
+export interface TransferProjectsToOrganizationRequest {
+    /**
+     * The destination organization identifier
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    destination_org_id: string;
+    /**
+     * The list of projects ids to transfer. Maximum of 400 project ids
+     * @maxItems 400
+     * @minItems 1
+     */
+    project_ids: string[];
+}
+export interface VerifyUserPasswordRequest {
+    password: string;
+}
+/** Identity provider id from keycloak */
+export declare enum IdentityProviderId {
+    Github = "github",
+    Google = "google",
+    Hasura = "hasura",
+    Microsoft = "microsoft",
+    Microsoftv2 = "microsoftv2",
+    Vercelmp = "vercelmp",
+    Keycloak = "keycloak"
+}
+/** A collection of settings for a compute endpoint */
+export interface EndpointSettingsData {
+    /** A raw representation of Postgres settings */
+    pg_settings?: PgSettingsData;
+    /** A raw representation of PgBouncer settings */
+    pgbouncer_settings?: PgbouncerSettingsData;
+}
+/**
+ * Per-project consumption quotas. If a quota is exceeded, all active computes
+ * are automatically suspended and cannot be started via API calls or incoming connections.
+ *
+ * The exception is `logical_size_bytes`, which is enforced per branch.
+ * If a branch exceeds its `logical_size_bytes` quota, computes can still be started,
+ * but write operations will fail—allowing data to be deleted to free up space.
+ * Computes on other branches are not affected.
+ *
+ * Setting `logical_size_bytes` overrides any lower value set by the `neon.max_cluster_size` Postgres setting.
+ *
+ * Quotas are enforced using per-project consumption metrics with the same names.
+ * These metrics reset at the start of each billing period. `logical_size_bytes`
+ * is also an exception—it reflects the total data stored in a branch and does not reset.
+ *
+ * A zero or empty quota value means “unlimited.”
+ */
+export interface ProjectQuota {
+    /**
+     * The total amount of wall-clock time allowed to be spent by the project's compute endpoints.
+     * @format int64
+     * @min 0
+     */
+    active_time_seconds?: number;
+    /**
+     * The total amount of CPU seconds allowed to be spent by the project's compute endpoints.
+     * @format int64
+     * @min 0
+     */
+    compute_time_seconds?: number;
+    /**
+     * Total amount of data written to all of a project's branches.
+     * @format int64
+     * @min 0
+     */
+    written_data_bytes?: number;
+    /**
+     * Total amount of data transferred from all of a project's branches using the proxy.
+     * @format int64
+     * @min 0
+     */
+    data_transfer_bytes?: number;
+    /**
+     * Limit on the logical size of every project's branch.
+     *
+     * If a branch exceeds its `logical_size_bytes` quota, computes can still be started,
+     * but write operations will fail—allowing data to be deleted to free up space.
+     * Computes on other branches are not affected.
+     *
+     * Setting `logical_size_bytes` overrides any lower value set by the `neon.max_cluster_size` Postgres setting.
+     * @format int64
+     * @min 0
+     */
+    logical_size_bytes?: number;
+}
+/** A collection of settings for a Neon endpoint */
+export interface DefaultEndpointSettings {
+    /** A raw representation of Postgres settings */
+    pg_settings?: PgSettingsData;
+    /** A raw representation of PgBouncer settings */
+    pgbouncer_settings?: PgbouncerSettingsData;
+    /**
+     * The minimum number of Compute Units. The minimum value is `0.25`.
+     * See [Compute size and Autoscaling configuration](https://neon.tech/docs/manage/endpoints#compute-size-and-autoscaling-configuration)
+     * for more information.
+     */
+    autoscaling_limit_min_cu?: ComputeUnit;
+    /**
+     * The maximum number of Compute Units. See [Compute size and Autoscaling configuration](https://neon.tech/docs/manage/endpoints#compute-size-and-autoscaling-configuration)
+     * for more information.
+     */
+    autoscaling_limit_max_cu?: ComputeUnit;
+    /**
+     * Duration of inactivity in seconds after which the compute endpoint is
+     * automatically suspended. The value `0` means use the default value.
+     * The value `-1` means never suspend. The default value is `300` seconds (5 minutes).
+     * The minimum value is `60` seconds (1 minute).
+     * The maximum value is `604800` seconds (1 week). For more information, see
+     * [Scale to zero configuration](https://neon.tech/docs/manage/endpoints#scale-to-zero-configuration).
+     */
+    suspend_timeout_seconds?: SuspendTimeoutSeconds;
+    [key: string]: any;
+}
+/** A raw representation of Postgres settings */
+export type PgSettingsData = Record<string, string>;
+/** A raw representation of PgBouncer settings */
+export type PgbouncerSettingsData = Record<string, string>;
+/**
+ * The major Postgres version number. Currently supported versions are `14`, `15`, `16`, and `17`.
+ * @min 14
+ * @max 17
+ * @default 17
+ */
+export type PgVersion = number;
+/** @example {"status":"ok"} */
+export interface HealthCheck {
+    /** Service status */
+    status: string;
+}
+export interface ProjectOwnerData {
+    /**
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    email: string;
+    name: string;
+    branches_limit: number;
+    /**
+     * Type of subscription to Neon Cloud.
+     * Notice that for users without billing account this will be "UNKNOWN"
+     */
+    subscription_type: BillingSubscriptionType;
+}
+/** @example {"limits":[{"name":"projects_count","actual":"2","expected":"1"},{"name":"subscription_type","actual":"launch","expected":"scale"}]} */
+export interface LimitsUnsatisfiedResponse {
+    limits: {
+        /**
+         * Identifier of the unsatisfied limit. Possible values are:
+         * - subscription_type
+         * - projects_count
+         * - project_region
+         */
+        name: string;
+        expected: string;
+        actual: string;
+    }[];
+}
+/** @example {"projects":[{"id":"round-frog-53611540","integration":"github"},{"id":"long-leaf-72329067","integration":"vercel"},{"id":"shrill-bush-06966719","integration":"outerbase"}]} */
+export interface ProjectsWithIntegrationResponse {
+    projects: {
+        /** @pattern ^[a-z0-9-]{1,60}$ */
+        id: string;
+        integration: string;
+    }[];
+}
+export declare enum UserDeletionConditionName {
+    ProjectCount = "project_count",
+    OrgAdminMembershipCount = "org_admin_membership_count",
+    SubscriptionType = "subscription_type"
+}
+export declare enum OrgDeletionConditionName {
+    ProjectCount = "project_count"
+}
+/** Create Neon Data API */
+export interface DataAPICreateRequest {
+    database_name?: string;
+    /**
+     * The URL that lists the JWKS
+     * @format uri
+     */
+    jwks_url?: string;
+    /**
+     * WARNING - using this setting will only reject tokens with a
+     * different audience claim. Tokens without audience claim will still
+     * be accepted.
+     */
+    jwt_audience?: string;
+}
+/** Neon Data API created successfully */
+export interface DataAPICreateResponse {
+    /** @format uri */
+    url: string;
+}
+/** Neon Data API response */
+export interface DataAPIReponse {
+    /**
+     * The URL of the Neon Data API
+     * @format uri
+     */
+    url: string;
+    /** The status of the Neon Data API deployment */
+    status: string;
+}
+export declare enum NeonAuthSupportedAuthProvider {
+    Mock = "mock",
+    Stack = "stack"
+}
+export declare enum NeonAuthProviderProjectOwnedBy {
+    User = "user",
+    Neon = "neon"
+}
+export declare enum NeonAuthProviderProjectTransferStatus {
+    Initiated = "initiated",
+    Finished = "finished"
+}
+export interface NeonAuthRedirectURIWhitelistDomain {
+    domain: string;
+    auth_provider: NeonAuthSupportedAuthProvider;
+}
+export interface NeonAuthRedirectURIWhitelistResponse {
+    domains: NeonAuthRedirectURIWhitelistDomain[];
+}
+export interface NeonAuthAddDomainToRedirectURIWhitelistRequest {
+    /** @format uri */
+    domain: string;
+    auth_provider: NeonAuthSupportedAuthProvider;
+}
+export interface NeonAuthDeleteDomainFromRedirectURIWhitelistRequest {
+    auth_provider: NeonAuthSupportedAuthProvider;
+    domains: NeonAuthDeleteDomainFromRedirectURIWhitelistItem[];
+}
+export interface NeonAuthDeleteDomainFromRedirectURIWhitelistItem {
+    /** @format uri */
+    domain: string;
+}
+export interface NeonAuthCreateIntegrationRequest {
+    auth_provider: NeonAuthSupportedAuthProvider;
+    /** @pattern ^[a-z0-9-]{1,60}$ */
+    project_id: string;
+    /** @pattern ^[a-z0-9-]{1,60}$ */
+    branch_id: string;
+    database_name?: string;
+    /** @deprecated */
+    role_name?: string;
+}
+export interface NeonAuthCreateIntegrationResponse {
+    auth_provider: NeonAuthSupportedAuthProvider;
+    auth_provider_project_id: string;
+    pub_client_key: string;
+    secret_server_key: string;
+    jwks_url: string;
+    schema_name: string;
+    table_name: string;
+}
+export interface NeonAuthCreateAuthProviderSDKKeysRequest {
+    /** @pattern ^[a-z0-9-]{1,60}$ */
+    project_id: string;
+    auth_provider: NeonAuthSupportedAuthProvider;
+}
+export interface NeonAuthCreateNewUserRequest {
+    /** @pattern ^[a-z0-9-]{1,60}$ */
+    project_id: string;
+    auth_provider: NeonAuthSupportedAuthProvider;
+    /**
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    email: string;
+    /**
+     * @minLength 1
+     * @maxLength 255
+     */
+    name?: string;
+}
+export interface NeonAuthCreateNewUserResponse {
+    /** ID of newly created user */
+    id: string;
+}
+export interface NeonAuthTransferAuthProviderProjectRequest {
+    /** @pattern ^[a-z0-9-]{1,60}$ */
+    project_id: string;
+    auth_provider: NeonAuthSupportedAuthProvider;
+}
+export interface NeonAuthTransferAuthProviderProjectResponse {
+    /** URL for completing the process of ownership transfer */
+    url: string;
+}
+export interface ListNeonAuthIntegrationsResponse {
+    data: NeonAuthIntegration[];
+}
+export interface ListNeonAuthOauthProvidersResponse {
+    providers: NeonAuthOauthProvider[];
+}
+export interface NeonAuthOauthProvider {
+    id: NeonAuthOauthProviderId;
+    type: NeonAuthOauthProviderType;
+    client_id?: string;
+    client_secret?: string;
+}
+export declare enum NeonAuthOauthProviderId {
+    Google = "google",
+    Github = "github",
+    Microsoft = "microsoft"
+}
+export declare enum NeonAuthOauthProviderType {
+    Standard = "standard",
+    Shared = "shared"
+}
+export interface NeonAuthAddOAuthProviderRequest {
+    id: NeonAuthOauthProviderId;
+    client_id?: string;
+    client_secret?: string;
+}
+export interface NeonAuthUpdateOAuthProviderRequest {
+    client_id?: string;
+    client_secret?: string;
+}
+export type SharedEmailServer = object;
+export interface StandardEmailServer {
+    host: string;
+    port: number;
+    username: string;
+    password: string;
+    sender_email: string;
+    sender_name: string;
+}
+export type NeonAuthEmailServerConfig = BaseNeonAuthEmailServerConfig & (BaseNeonAuthEmailServerConfigTypeMapping<'standard', StandardEmailServer> | BaseNeonAuthEmailServerConfigTypeMapping<'shared', SharedEmailServer>);
+export type SendNeonAuthTestEmailRequest = StandardEmailServer & {
+    /**
+     * The email address to send the test email to.
+     * @format email
+     * @minLength 1
+     * @maxLength 256
+     */
+    recipient_email: string;
+};
+export interface SendNeonAuthTestEmailResponse {
+    /** Whether the test email was sent successfully. */
+    success: boolean;
+    /** The error message from the email server. */
+    error_message?: string;
+}
+export interface NeonAuthIntegration {
+    auth_provider: string;
+    auth_provider_project_id: string;
+    /** @pattern ^[a-z0-9-]{1,60}$ */
+    branch_id: string;
+    db_name: string;
+    /** @format date-time */
+    created_at: string;
+    owned_by: NeonAuthProviderProjectOwnedBy;
+    transfer_status?: NeonAuthProviderProjectTransferStatus;
+    jwks_url: string;
+}
+/**
+ * General Error.
+ *
+ * The request may or may not be safe to retry, depending on the HTTP method, response status code, and whether a response was received.
+ *
+ *
+ * - If no response is returned from the API, a network error or timeout likely occurred.
+ * - In some cases, the request may have reached the server and been successfully processed, but the response failed to reach the client. As a result, retrying non-idempotent requests can lead to unintended results.
+ * The following HTTP methods are considered non-idempotent: POST, PATCH, DELETE, and PUT. Retrying these methods is generally **not safe**.
+ * The following methods are considered idempotent: GET, HEAD, and OPTIONS. Retrying these methods is **safe** in the event of a network error or timeout.
+ *
+ * Any request that returns a `503 Service Unavailable` response is always safe to retry.
+ */
+export interface GeneralError {
+    /**
+     * Unique identifier for the request, useful for debugging.
+     * You can set this value manually by including an `X-Request-ID` header in the request. If not provided, the value will be generated automatically.
+     */
+    request_id?: string;
+    code: ErrorCode;
+    /** Error message */
+    message: string;
+}
+export type ErrorCode = string;
+export type BranchOperations = BranchResponse & OperationsResponse;
+export type EndpointOperations = EndpointResponse & OperationsResponse;
+export type DatabaseOperations = DatabaseResponse & OperationsResponse;
+export type RoleOperations = RoleResponse & OperationsResponse;
+export type JWKSCreationOperation = JWKSResponse & OperationsResponse;
+export declare enum SupportTicketSeverity {
+    Low = "low",
+    Normal = "normal",
+    High = "high",
+    Critical = "critical"
+}
+export interface AnnotationData {
+    object: AnnotationObjectData;
+    /** Annotation properties. */
+    value: AnnotationValueData;
+    /** @format date-time */
+    created_at?: string;
+    /** @format date-time */
+    updated_at?: string;
+}
+/** Annotation properties. */
+export type AnnotationValueData = Record<string, string>;
+export interface AnnotationObjectData {
+    type: string;
+    id: string;
+}
+export interface AnnotationCreateValueRequest {
+    /** Annotation properties. */
+    annotation_value?: AnnotationValueData;
+}
+export interface AnnotationResponse {
+    annotation: AnnotationData;
+}
+export interface AnnotationsMapResponse {
+    annotations: Record<string, AnnotationData>;
+}
+/**
+ * A map where key is a project ID and a value is a list of installed applications.
+ * @example {"winter-boat-259881":["vercel","github","datadog","opentelemetry"]}
+ */
+export interface ProjectsApplicationsMapResponse {
+    applications: Record<string, ('vercel' | 'github' | 'datadog' | 'opentelemetry')[]>;
+}
+/**
+ * A map where key is a project ID and a value is a list of installed integrations.
+ * @example {"winter-boat-259881":["vercel","github","datadog","opentelemetry"]}
+ */
+export interface ProjectsIntegrationsMapResponse {
+    integrations: Record<string, ('vercel' | 'github' | 'datadog' | 'opentelemetry')[]>;
+}
+export interface CursorPaginationResponse {
+    /** To paginate the response, issue an initial request with `limit` value. Then, add the value returned in the response `.pagination.next` attribute into the request under the `cursor` query parameter to the subsequent request to retrieve next page in pagination. The contents on cursor `next` are opaque, clients are not expected to make any assumptions on the format of the data inside the cursor. */
+    pagination?: CursorPagination;
+}
+/** To paginate the response, issue an initial request with `limit` value. Then, add the value returned in the response `.pagination.next` attribute into the request under the `cursor` query parameter to the subsequent request to retrieve next page in pagination. The contents on cursor `next` are opaque, clients are not expected to make any assumptions on the format of the data inside the cursor. */
+export interface CursorPagination {
+    next?: string;
+    sort_by?: string;
+    sort_order?: string;
+}
+export interface Snapshot {
+    /** @pattern ^[a-z0-9-]{1,60}$ */
+    id: string;
+    name: string;
+    lsn?: string;
+    timestamp?: string;
+    /** @pattern ^[a-z0-9-]{1,60}$ */
+    source_branch_id?: string;
+    created_at: string;
+    expires_at?: string;
+}
+export interface SnapshotUpdateRequest {
+    snapshot: {
+        name?: string;
+    };
+}
+export interface SnapshotScheduleItem {
+    /**
+     * The frequency to take snapshots at; one of the following options:
+     *   - hourly
+     *   - daily
+     *   - weekly
+     *   - monthly
+     *   - yearly
+     */
+    frequency: string;
+    /**
+     * The hour in the day to take a snapshot at (if applicable).
+     * @min 0
+     * @max 23
+     */
+    hour?: number;
+    /**
+     * The day in the month/week to take a snapshot at (if applicable).
+     * @min 1
+     * @max 31
+     */
+    day?: number;
+    /**
+     * The month in the year to take a snapshot at (if applicable).
+     * @min 1
+     * @max 12
+     */
+    month?: number;
+    /**
+     * The time in seconds until snapshots created by this schedule are automatically deleted.
+     * If not provided, these snapshots are retained indefinitely.
+     * @min 3600
+     */
+    retention_seconds?: number;
+}
+export interface SnapshotSchedule {
+    schedule: SnapshotScheduleItem[];
+}
+export interface SupportTicket {
+    /** @format int64 */
+    zendesk_id: number;
+}
+export interface BranchSchemaJSON {
+    tables: {
+        schema: string;
+        name: string;
+        columns: {
+            name: string;
+            type: string;
+        }[];
+    }[];
+}
+type BaseNeonAuthEmailServerConfig = object;
+type BaseNeonAuthEmailServerConfigTypeMapping<Key, Type> = {
+    type: Key;
+} & Type;
+export interface ListProjectsParams {
+    /** Specify the cursor value from the previous response to retrieve the next batch of projects. */
+    cursor?: string;
+    /**
+     * Specify a value from 1 to 400 to limit number of projects in the response.
+     * @min 1
+     * @max 400
+     * @default 10
+     */
+    limit?: number;
+    /** Search by project `name` or `id`. You can specify partial `name` or `id` values to filter results. */
+    search?: string;
+    /**
+     * Search for projects by `org_id`.
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    org_id?: string;
+    /**
+     * Specify an explicit timeout in milliseconds to limit response delay.
+     * After timing out, the incomplete list of project data fetched so far will be returned.
+     * Projects still being fetched when the timeout occurred are listed in the "unavailable" attribute of the response.
+     * If not specified, an implicit implementation defined timeout is chosen with the same behaviour as above
+     * @min 100
+     * @max 30000
+     */
+    timeout?: number;
+}
+export interface ListSharedProjectsParams {
+    /** Specify the cursor value from the previous response to get the next batch of projects. */
+    cursor?: string;
+    /**
+     * Specify a value from 1 to 400 to limit number of projects in the response.
+     * @min 1
+     * @max 400
+     * @default 10
+     */
+    limit?: number;
+    /** Search query by name or id. */
+    search?: string;
+    /**
+     * Specify an explicit timeout in milliseconds to limit response delay.
+     * After timing out, the incomplete list of project data fetched so far will be returned.
+     * Projects still being fetched when the timeout occurred are listed in the "unavailable" attribute of the response.
+     * If not specified, an implicit implementation defined timeout is chosen with the same behaviour as above
+     * @min 100
+     * @max 30000
+     */
+    timeout?: number;
+}
+export interface ListProjectOperationsParams {
+    /** Specify the cursor value from the previous response to get the next batch of operations */
+    cursor?: string;
+    /**
+     * Specify a value from 1 to 1000 to limit number of operations in the response
+     * @min 1
+     * @max 1000
+     */
+    limit?: number;
+    /**
+     * The Neon project ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    projectId: string;
+}
+export interface GetConnectionUriParams {
+    /**
+     * The branch ID. Defaults to your project's default `branch_id` if not specified.
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    branch_id?: string;
+    /**
+     * The endpoint ID. Defaults to the read-write `endpoint_id` associated with the `branch_id` if not specified.
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    endpoint_id?: string;
+    /** The database name */
+    database_name: string;
+    /** The role name */
+    role_name: string;
+    /** Adds the `-pooler` option to the connection URI when set to `true`, creating a pooled connection URI. */
+    pooled?: boolean;
+    /**
+     * The Neon project ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    projectId: string;
+}
+export interface ListProjectBranchesParams {
+    /** Search by branch `name` or `id`. You can specify partial `name` or `id` values to filter results. */
+    search?: string;
+    /**
+     * Sort the branches by sort_field. If not provided, branches will be sorted by updated_at descending order
+     * @default "updated_at"
+     */
+    sort_by?: 'name' | 'created_at' | 'updated_at';
+    /** A cursor to use in pagination. A cursor defines your place in the data list. Include `response.pagination.next` in subsequent API calls to fetch next page of the list. */
+    cursor?: string;
+    /**
+     * Defines the sorting order of entities.
+     * @default "desc"
+     */
+    sort_order?: 'asc' | 'desc';
+    /**
+     * The maximum number of records to be returned in the response
+     * @min 1
+     * @max 10000
+     */
+    limit?: number;
+    /**
+     * The Neon project ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    projectId: string;
+}
+export interface CountProjectBranchesParams {
+    /** Count branches matching the `name` in search query */
+    search?: string;
+    /**
+     * The Neon project ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    projectId: string;
+}
+export interface GetProjectBranchSchemaParams {
+    /** Name of the database for which the schema is retrieved */
+    db_name: string;
+    /** The Log Sequence Number (LSN) for which the schema is retrieved */
+    lsn?: string;
+    /**
+     * The point in time for which the schema is retrieved
+     * @format date-time
+     * @example "2022-11-30T20:09:48Z"
+     */
+    timestamp?: string;
+    /**
+     * The format of the schema to retrieve. Possible values:
+     * - `sql` (default)
+     * - `json`
+     */
+    format?: string;
+    /**
+     * The Neon project ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    projectId: string;
+    /**
+     * The branch ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    branchId: string;
+}
+export interface GetProjectBranchSchemaComparisonParams {
+    /**
+     * The branch ID to compare the schema with
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    base_branch_id?: string;
+    /** Name of the database for which the schema is retrieved */
+    db_name: string;
+    /** The Log Sequence Number (LSN) for which the schema is retrieved */
+    lsn?: string;
+    /**
+     * The point in time for which the schema is retrieved
+     * @format date-time
+     * @example "2022-11-30T20:09:48Z"
+     */
+    timestamp?: string;
+    /** The Log Sequence Number (LSN) for the base branch schema */
+    base_lsn?: string;
+    /**
+     * The point in time for the base branch schema
+     * @format date-time
+     * @example "2022-11-30T20:09:48Z"
+     */
+    base_timestamp?: string;
+    /**
+     * The Neon project ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    projectId: string;
+    /**
+     * The branch ID
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    branchId: string;
+}
+export interface GetConsumptionHistoryPerAccountParams {
+    /**
+     * Specify the start `date-time` for the consumption period.
+     * The `date-time` value is rounded according to the specified `granularity`.
+     * For example, `2024-03-15T15:30:00Z` for `daily` granularity will be rounded to `2024-03-15T00:00:00Z`.
+     * The specified `date-time` value must respect the specified granularity:
+     * - For `hourly`, consumption metrics are limited to the last 168 hours.
+     * - For `daily`, consumption metrics are limited to the last 60 days.
+     * - For `monthly`, consumption metrics are limited to the past year.
+     *
+     * The consumption history is available starting from `March 1, 2024, at 00:00:00 UTC`.
+     * @format date-time
+     */
+    from: string;
+    /**
+     * Specify the end `date-time` for the consumption period.
+     * The `date-time` value is rounded according to the specified granularity.
+     * For example, `2024-03-15T15:30:00Z` for `daily` granularity will be rounded to `2024-03-15T00:00:00Z`.
+     * The specified `date-time` value must respect the specified granularity:
+     * - For `hourly`, consumption metrics are limited to the last 168 hours.
+     * - For `daily`, consumption metrics are limited to the last 60 days.
+     * - For `monthly`, consumption metrics are limited to the past year.
+     * @format date-time
+     */
+    to: string;
+    /**
+     * Specify the granularity of consumption metrics.
+     * Hourly, daily, and monthly metrics are available for the last 168 hours, 60 days,
+     * and 1 year, respectively.
+     */
+    granularity: ConsumptionHistoryGranularity;
+    /**
+     * Specify the organization for which the consumption metrics should be returned.
+     * If this parameter is not provided, the endpoint will return the metrics for the
+     * authenticated user's account.
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    org_id?: string;
+    /**
+     * The field is deprecated. Please use `metrics` instead.
+     * If `metrics` is specified, this field is ignored.
+     * Include metrics utilized in previous pricing models.
+     * - **data_storage_bytes_hour**: The sum of the maximum observed storage values for each hour
+     *   for each project, which never decreases.
+     * @deprecated
+     */
+    include_v1_metrics?: boolean;
+    /**
+     * Specify a list of metrics to include in the response.
+     * If omitted, active_time, compute_time, written_data, synthetic_storage_size are returned.
+     * Possible values:
+     * - `active_time_seconds`
+     * - `compute_time_seconds`
+     * - `written_data_bytes`
+     * - `synthetic_storage_size_bytes`
+     * - `data_storage_bytes_hour`
+     *
+     * A list of metrics can be specified as an array of parameter values or as a comma-separated list in a single parameter value.
+     * - As an array of parameter values: `metrics=cpu_seconds&metrics=ram_bytes`
+     * - As a comma-separated list in a single parameter value: `metrics=cpu_seconds,ram_bytes`
+     */
+    metrics?: ConsumptionHistoryQueryMetrics;
+}
+export interface GetConsumptionHistoryPerProjectParams {
+    /** Specify the cursor value from the previous response to get the next batch of projects. */
+    cursor?: string;
+    /**
+     * Specify a value from 1 to 100 to limit number of projects in the response.
+     * @min 1
+     * @max 100
+     * @default 10
+     */
+    limit?: number;
+    /**
+     * Specify a list of project IDs to filter the response.
+     * If omitted, the response will contain all projects.
+     * A list of project IDs can be specified as an array of parameter values or as a comma-separated list in a single parameter value.
+     * - As an array of parameter values: `project_ids=cold-poetry-09157238%20&project_ids=quiet-snow-71788278`
+     * - As a comma-separated list in a single parameter value: `project_ids=cold-poetry-09157238,quiet-snow-71788278`
+     * @maxItems 100
+     * @minItems 0
+     */
+    project_ids?: string[];
+    /**
+     * Specify the start `date-time` for the consumption period.
+     * The `date-time` value is rounded according to the specified `granularity`.
+     * For example, `2024-03-15T15:30:00Z` for `daily` granularity will be rounded to `2024-03-15T00:00:00Z`.
+     * The specified `date-time` value must respect the specified `granularity`:
+     * - For `hourly`, consumption metrics are limited to the last 168 hours.
+     * - For `daily`, consumption metrics are limited to the last 60 days.
+     * - For `monthly`, consumption metrics are limited to the last year.
+     *
+     * The consumption history is available starting from `March 1, 2024, at 00:00:00 UTC`.
+     * @format date-time
+     */
+    from: string;
+    /**
+     * Specify the end `date-time` for the consumption period.
+     * The `date-time` value is rounded according to the specified granularity.
+     * For example, `2024-03-15T15:30:00Z` for `daily` granularity will be rounded to `2024-03-15T00:00:00Z`.
+     * The specified `date-time` value must respect the specified `granularity`:
+     * - For `hourly`, consumption metrics are limited to the last 168 hours.
+     * - For `daily`, consumption metrics are limited to the last 60 days.
+     * - For `monthly`, consumption metrics are limited to the last year.
+     * @format date-time
+     */
+    to: string;
+    /**
+     * Specify the granularity of consumption metrics.
+     * Hourly, daily, and monthly metrics are available for the last 168 hours, 60 days,
+     * and 1 year, respectively.
+     */
+    granularity: ConsumptionHistoryGranularity;
+    /**
+     * Specify the organization for which the project consumption metrics should be returned.
+     * If this parameter is not provided, the endpoint will return the metrics for the
+     * authenticated user's projects.
+     * @pattern ^[a-z0-9-]{1,60}$
+     */
+    org_id?: string;
+    /**
+     * The field is deprecated. Please use `metrics` instead.
+     * If `metrics` is specified, this field is ignored.
+     * Include metrics utilized in previous pricing models.
+     * - **data_storage_bytes_hour**: The sum of the maximum observed storage values for each hour,
+     *   which never decreases.
+     * @deprecated
+     */
+    include_v1_metrics?: boolean;
+    /**
+     * Specify a list of metrics to include in the response.
+     * If omitted, active_time, compute_time, written_data, synthetic_storage_size are returned.
+     * Possible values:
+     * - `active_time_seconds`
+     * - `compute_time_seconds`
+     * - `written_data_bytes`
+     * - `synthetic_storage_size_bytes`
+     * - `data_storage_bytes_hour`
+     * - `logical_size_bytes`
+     * - `logical_size_bytes_hour`
+     *
+     * A list of metrics can be specified as an array of parameter values or as a comma-separated list in a single parameter value.
+     * - As an array of parameter values: `metrics=cpu_seconds&metrics=ram_bytes`
+     * - As a comma-separated list in a single parameter value: `metrics=cpu_seconds,ram_bytes`
+     */
+    metrics?: ConsumptionHistoryQueryMetrics;
+}
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, ResponseType } from 'axios';
+export type QueryParamsType = Record<string | number, any>;
+export interface FullRequestParams extends Omit<AxiosRequestConfig, 'data' | 'params' | 'url' | 'responseType'> {
+    /** set parameter to `true` for call `securityWorker` for this request */
+    secure?: boolean;
+    /** request path */
+    path: string;
+    /** content type of request body */
+    type?: ContentType;
+    /** query params */
+    query?: QueryParamsType;
+    /** format of response (i.e. response.json() -> format: "json") */
+    format?: ResponseType;
+    /** request body */
+    body?: unknown;
+}
+export type RequestParams = Omit<FullRequestParams, 'body' | 'method' | 'query' | 'path'>;
+export interface ApiConfig<SecurityDataType = unknown> extends Omit<AxiosRequestConfig, 'data' | 'cancelToken'> {
+    securityWorker?: (securityData: SecurityDataType | null) => Promise<AxiosRequestConfig | void> | AxiosRequestConfig | void;
+    secure?: boolean;
+    format?: ResponseType;
+}
+export declare enum ContentType {
+    Json = "application/json",
+    FormData = "multipart/form-data",
+    UrlEncoded = "application/x-www-form-urlencoded",
+    Text = "text/plain"
+}
+export declare class HttpClient<SecurityDataType = unknown> {
+    instance: AxiosInstance;
+    private securityData;
+    private securityWorker?;
+    private secure?;
+    private format?;
+    constructor({ securityWorker, secure, format, ...axiosConfig }?: ApiConfig<SecurityDataType>);
+    setSecurityData: (data: SecurityDataType | null) => void;
+    protected mergeRequestParams(params1: AxiosRequestConfig, params2?: AxiosRequestConfig): AxiosRequestConfig;
+    protected stringifyFormItem(formItem: unknown): string;
+    protected createFormData(input: Record<string, unknown>): FormData;
+    request: <T = any, _E = any>({ secure, path, type, query, format, body, ...params }: FullRequestParams) => Promise<AxiosResponse<T>>;
+}
+/**
+ * @title Neon API
+ * @version v2
+ * @license Proprietary
+ * @baseUrl https://console.neon.tech/api/v2
+ * @contact <support@neon.tech>
+ *
+ * The Neon API allows you to access and manage Neon programmatically. You can use the Neon API to manage API keys, projects, branches, compute endpoints, databases, roles, and operations. For information about these features, refer to the [Neon documentation](https://neon.tech/docs/manage/overview/).
+ *
+ * You can run Neon API requests from this API reference using the **Try It** feature. Enter your API key as a **Bearer** token in the **Authorization** section of the page.
+ *
+ * You can create and manage API keys in the Neon Console. See [Manage API keys](https://neon.tech/docs/manage/api-keys/) for instructions.
+ */
+export declare class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
+    /**
+     * @description Retrieves the API keys for your Neon account. The response does not include API key tokens. A token is only provided when creating an API key. API keys can also be managed in the Neon Console. For more information, see [Manage API keys](https://neon.tech/docs/manage/api-keys/).
+     *
+     * @tags API Key
+     * @name ListApiKeys
+     * @summary List API keys
+     * @request GET:/api_keys
+     * @secure
+     */
+    listApiKeys: (params?: RequestParams) => Promise<AxiosResponse<ApiKeysListResponseItem[], any>>;
+    /**
+     * @description Creates an API key. The `key_name` is a user-specified name for the key. This method returns an `id` and `key`. The `key` is a randomly generated, 64-bit token required to access the Neon API. API keys can also be managed in the Neon Console. See [Manage API keys](https://neon.tech/docs/manage/api-keys/).
+     *
+     * @tags API Key
+     * @name CreateApiKey
+     * @summary Create API key
+     * @request POST:/api_keys
+     * @secure
+     */
+    createApiKey: (data: ApiKeyCreateRequest, params?: RequestParams) => Promise<AxiosResponse<ApiKeyCreateResponse, any>>;
+    /**
+     * @description Revokes the specified API key. An API key that is no longer needed can be revoked. This action cannot be reversed. You can obtain `key_id` values by listing the API keys for your Neon account. API keys can also be managed in the Neon Console. See [Manage API keys](https://neon.tech/docs/manage/api-keys/).
+     *
+     * @tags API Key
+     * @name RevokeApiKey
+     * @summary Revoke API key
+     * @request DELETE:/api_keys/{key_id}
+     * @secure
+     */
+    revokeApiKey: (keyId: number, params?: RequestParams) => Promise<AxiosResponse<ApiKeyRevokeResponse, any>>;
+    /**
+     * @description Retrieves details for the specified operation. An operation is an action performed on a Neon project resource. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain a `operation_id` by listing operations for the project.
+     *
+     * @tags Operation
+     * @name GetProjectOperation
+     * @summary Retrieve operation details
+     * @request GET:/projects/{project_id}/operations/{operation_id}
+     * @secure
+     */
+    getProjectOperation: (projectId: string, operationId: string, params?: RequestParams) => Promise<AxiosResponse<OperationResponse, any>>;
+    /**
+     * @description Retrieves a list of projects for an organization. You may need to specify an org_id parameter depending on your API key type. For more information, see [Manage projects](https://neon.tech/docs/manage/projects/).
+     *
+     * @tags Project
+     * @name ListProjects
+     * @summary List projects
+     * @request GET:/projects
+     * @secure
+     */
+    listProjects: (query: ListProjectsParams, params?: RequestParams) => Promise<AxiosResponse<ProjectsResponse & PaginationResponse & ProjectsApplicationsMapResponse & ProjectsIntegrationsMapResponse, any>>;
+    /**
+     * @description Creates a Neon project within an organization. You may need to specify an org_id parameter depending on your API key type. Plan limits define how many projects you can create. For more information, see [Manage projects](https://neon.tech/docs/manage/projects/). You can specify a region and Postgres version in the request body. Neon currently supports PostgreSQL 14, 15, 16, and 17. For supported regions and `region_id` values, see [Regions](https://neon.tech/docs/introduction/regions/).
+     *
+     * @tags Project
+     * @name CreateProject
+     * @summary Create project
+     * @request POST:/projects
+     * @secure
+     */
+    createProject: (data: ProjectCreateRequest, params?: RequestParams) => Promise<AxiosResponse<ProjectResponse & ConnectionURIsResponse & RolesResponse & DatabasesResponse & OperationsResponse & BranchResponse & EndpointsResponse, any>>;
+    /**
+     * @description Retrieves a list of projects shared with your Neon account. For more information, see [Manage projects](https://neon.tech/docs/manage/projects/).
+     *
+     * @tags Project
+     * @name ListSharedProjects
+     * @summary List shared projects
+     * @request GET:/projects/shared
+     * @secure
+     */
+    listSharedProjects: (query: ListSharedProjectsParams, params?: RequestParams) => Promise<AxiosResponse<ProjectsResponse & PaginationResponse, any>>;
+    /**
+     * @description Retrieves information about the specified project. You can obtain a `project_id` by listing the projects for an organization.
+     *
+     * @tags Project
+     * @name GetProject
+     * @summary Retrieve project details
+     * @request GET:/projects/{project_id}
+     * @secure
+     */
+    getProject: (projectId: string, params?: RequestParams) => Promise<AxiosResponse<ProjectResponse, any>>;
+    /**
+     * @description Updates the specified project. You can obtain a `project_id` by listing the projects for your Neon account.
+     *
+     * @tags Project
+     * @name UpdateProject
+     * @summary Update project
+     * @request PATCH:/projects/{project_id}
+     * @secure
+     */
+    updateProject: (projectId: string, data: ProjectUpdateRequest, params?: RequestParams) => Promise<AxiosResponse<ProjectResponse & OperationsResponse, any>>;
+    /**
+     * @description Deletes the specified project. You can obtain a `project_id` by listing the projects for your Neon account. Deleting a project is a permanent action. Deleting a project also deletes endpoints, branches, databases, and users that belong to the project.
+     *
+     * @tags Project
+     * @name DeleteProject
+     * @summary Delete project
+     * @request DELETE:/projects/{project_id}
+     * @secure
+     */
+    deleteProject: (projectId: string, params?: RequestParams) => Promise<AxiosResponse<ProjectResponse, any>>;
+    /**
+     * @description Retrieves a list of operations for the specified Neon project. You can obtain a `project_id` by listing the projects for your Neon account. The number of operations returned can be large. To paginate the response, issue an initial request with a `limit` value. Then, add the `cursor` value that was returned in the response to the next request. Operations older than 6 months may be deleted from our systems. If you need more history than that, you should store your own history.
+     *
+     * @tags Operation
+     * @name ListProjectOperations
+     * @summary List operations
+     * @request GET:/projects/{project_id}/operations
+     * @secure
+     */
+    listProjectOperations: ({ projectId, ...query }: ListProjectOperationsParams, params?: RequestParams) => Promise<AxiosResponse<OperationsResponse & PaginationResponse, any>>;
+    /**
+     * @description Retrieves details about users who have access to the project, including the permission `id`, the granted-to email address, and the date project access was granted.
+     *
+     * @tags Project
+     * @name ListProjectPermissions
+     * @summary List project access
+     * @request GET:/projects/{project_id}/permissions
+     * @secure
+     */
+    listProjectPermissions: (projectId: string, params?: RequestParams) => Promise<AxiosResponse<ProjectPermissions, any>>;
+    /**
+     * @description Grants project access to the account associated with the specified email address
+     *
+     * @tags Project
+     * @name GrantPermissionToProject
+     * @summary Grant project access
+     * @request POST:/projects/{project_id}/permissions
+     * @secure
+     */
+    grantPermissionToProject: (projectId: string, data: GrantPermissionToProjectRequest, params?: RequestParams) => Promise<AxiosResponse<ProjectPermission, any>>;
+    /**
+     * @description Revokes project access from the user associated with the specified permission `id`. You can retrieve a user's permission `id` by listing project access.
+     *
+     * @tags Project
+     * @name RevokePermissionFromProject
+     * @summary Revoke project access
+     * @request DELETE:/projects/{project_id}/permissions/{permission_id}
+     * @secure
+     */
+    revokePermissionFromProject: (projectId: string, permissionId: string, params?: RequestParams) => Promise<AxiosResponse<ProjectPermission, any>>;
+    /**
+     * @description Return available shared preload libraries
+     *
+     * @tags Project
+     * @name GetAvailablePreloadLibraries
+     * @summary Return available shared preload libraries
+     * @request GET:/projects/{project_id}/available_preload_libraries
+     * @secure
+     */
+    getAvailablePreloadLibraries: (projectId: string, params?: RequestParams) => Promise<AxiosResponse<AvailablePreloadLibraries, any>>;
+    /**
+     * @description Creates a transfer request for the specified project. A transfer request allows the project to be transferred to another account or organization. The request has an expiration time after which it can no longer be used. To accept/claim the transfer request, the recipient user/organization must call the `/projects/{project_id}/transfer_requests/{request_id}` API endpoint, or visit `https://console.neon.tech/app/claim?p={project_id}&tr={request_id}&ru={redirect_url}` in the Neon Console. The `ru` parameter is optional and can be used to redirect the user after accepting the transfer request. This feature is currently in private preview. Get in touch with us to get access.
+     *
+     * @tags Project
+     * @name CreateProjectTransferRequest
+     * @summary Create a project transfer request
+     * @request POST:/projects/{project_id}/transfer_requests
+     * @secure
+     */
+    createProjectTransferRequest: (projectId: string, data: {
+        /**
+         * Specifies the validity duration of the transfer request in seconds. If not provided,
+         * the request will expire after 24 hours (86,400 seconds).
+         * @format int64
+         */
+        ttl_seconds?: number;
+    }, params?: RequestParams) => Promise<AxiosResponse<ProjectTransferRequestResponse, any>>;
+    /**
+     * @description Accepts a transfer request for the specified project, transferring it to the specified organization or user. If org_id is not passed, the project will be transferred to the current user or organization account.
+     *
+     * @tags Project
+     * @name AcceptProjectTransferRequest
+     * @summary Accept a project transfer request
+     * @request PUT:/projects/{project_id}/transfer_requests/{request_id}
+     * @secure
+     */
+    acceptProjectTransferRequest: (projectId: string, requestId: string, data: {
+        /**
+         * The Neon organization ID to transfer the project to. If not provided, the project will be
+         * transferred to the current user or organization account.
+         * @pattern ^[a-z0-9-]{1,60}$
+         */
+        org_id?: string;
+    }, params?: RequestParams) => Promise<AxiosResponse<void, any>>;
+    /**
+     * @description Returns the JWKS URLs available for verifying JWTs used as the authentication mechanism for the specified project.
+     *
+     * @tags Project
+     * @name GetProjectJwks
+     * @summary List JWKS URLs
+     * @request GET:/projects/{project_id}/jwks
+     * @secure
+     */
+    getProjectJwks: (projectId: string, params?: RequestParams) => Promise<AxiosResponse<ProjectJWKSResponse, any>>;
+    /**
+     * @description Add a new JWKS URL to a project, such that it can be used for verifying JWTs used as the authentication mechanism for the specified project. The URL must be a valid HTTPS URL that returns a JSON Web Key Set. The `provider_name` field allows you to specify which authentication provider you're using (e.g., Clerk, Auth0, AWS Cognito, etc.). The `branch_id` can be used to specify on which branches the JWKS URL will be accepted. If not specified, then it will work on any branch. The `role_names` can be used to specify for which roles the JWKS URL will be accepted. The `jwt_audience` can be used to specify which "aud" values should be accepted by Neon in the JWTs that are used for authentication.
+     *
+     * @tags Project
+     * @name AddProjectJwks
+     * @summary Add JWKS URL
+     * @request POST:/projects/{project_id}/jwks
+     * @secure
+     */
+    addProjectJwks: (projectId: string, data: AddProjectJWKSRequest, params?: RequestParams) => Promise<AxiosResponse<JWKSCreationOperation, any>>;
+    /**
+     * @description Deletes a JWKS URL from the specified project
+     *
+     * @tags Project
+     * @name DeleteProjectJwks
+     * @summary Delete JWKS URL
+     * @request DELETE:/projects/{project_id}/jwks/{jwks_id}
+     * @secure
+     */
+    deleteProjectJwks: (projectId: string, jwksId: string, params?: RequestParams) => Promise<AxiosResponse<JWKS, any>>;
+    /**
+     * @description Creates a new instance of Neon Data API in the specified branch. You can obtain the `project_id` and `branch_id` by listing the projects and branches for your Neon account.
+     *
+     * @tags DataAPI
+     * @name CreateProjectBranchDataApi
+     * @summary Create Neon Data API
+     * @request POST:/projects/{project_id}/branches/{branch_id}/data-api
+     * @secure
+     */
+    createProjectBranchDataApi: (projectId: string, branchId: string, data: DataAPICreateRequest, params?: RequestParams) => Promise<AxiosResponse<DataAPICreateResponse, any>>;
+    /**
+     * @description Deletes the Neon Data API for the specified branch. You can obtain the `project_id` and `branch_id` by listing the projects and branches for your Neon account.
+     *
+     * @tags DataAPI
+     * @name DeleteProjectBranchDataApi
+     * @summary Delete Neon Data API
+     * @request DELETE:/projects/{project_id}/branches/{branch_id}/data-api
+     * @secure
+     */
+    deleteProjectBranchDataApi: (projectId: string, branchId: string, params?: RequestParams) => Promise<AxiosResponse<object, any>>;
+    /**
+     * @description Retrieves the Neon Data API for the specified branch.
+     *
+     * @tags DataAPI
+     * @name GetProjectBranchDataApi
+     * @summary Get Neon Data API
+     * @request GET:/projects/{project_id}/branches/{branch_id}/data-api
+     * @secure
+     */
+    getProjectBranchDataApi: (projectId: string, branchId: string, params?: RequestParams) => Promise<AxiosResponse<DataAPIReponse, any>>;
+    /**
+     * @description Creates a project on a third-party authentication provider's platform for use with Neon Auth. Use this endpoint if the frontend integration flow can't be used.
+     *
+     * @tags Auth
+     * @name CreateNeonAuthIntegration
+     * @summary Create Neon Auth integration
+     * @request POST:/projects/auth/create
+     * @secure
+     */
+    createNeonAuthIntegration: (data: NeonAuthCreateIntegrationRequest, params?: RequestParams) => Promise<AxiosResponse<NeonAuthCreateIntegrationResponse, any>>;
+    /**
+     * @description Lists the domains in the redirect_uri whitelist for the specified project.
+     *
+     * @tags Auth
+     * @name ListNeonAuthRedirectUriWhitelistDomains
+     * @summary List domains in redirect_uri whitelist
+     * @request GET:/projects/{project_id}/auth/domains
+     * @secure
+     */
+    listNeonAuthRedirectUriWhitelistDomains: (projectId: string, params?: RequestParams) => Promise<AxiosResponse<NeonAuthRedirectURIWhitelistResponse, any>>;
+    /**
+     * @description Adds a domain to the redirect_uri whitelist for the specified project.
+     *
+     * @tags Auth
+     * @name AddNeonAuthDomainToRedirectUriWhitelist
+     * @summary Add domain to redirect_uri whitelist
+     * @request POST:/projects/{project_id}/auth/domains
+     * @secure
+     */
+    addNeonAuthDomainToRedirectUriWhitelist: (projectId: string, data: NeonAuthAddDomainToRedirectURIWhitelistRequest, params?: RequestParams) => Promise<AxiosResponse<void, any>>;
+    /**
+     * @description Deletes a domain from the redirect_uri whitelist for the specified project.
+     *
+     * @tags Auth
+     * @name DeleteNeonAuthDomainFromRedirectUriWhitelist
+     * @summary Delete domain from redirect_uri whitelist
+     * @request DELETE:/projects/{project_id}/auth/domains
+     * @secure
+     */
+    deleteNeonAuthDomainFromRedirectUriWhitelist: (projectId: string, data: NeonAuthDeleteDomainFromRedirectURIWhitelistRequest, params?: RequestParams) => Promise<AxiosResponse<void, any>>;
+    /**
+     * @description Generates SDK or API Keys for the auth provider. These might be called different things depending on the auth provider you're using, but are generally used for setting up the frontend and backend SDKs.
+     *
+     * @tags Auth
+     * @name CreateNeonAuthProviderSdkKeys
+     * @summary Create Auth Provider SDK keys
+     * @request POST:/projects/auth/keys
+     * @secure
+     */
+    createNeonAuthProviderSdkKeys: (data: NeonAuthCreateAuthProviderSDKKeysRequest, params?: RequestParams) => Promise<AxiosResponse<NeonAuthCreateIntegrationResponse, any>>;
+    /**
+     * @description Creates a new user in Neon Auth. The user will be created in your neon_auth.users_sync table and automatically propagated to your auth project, whether Neon-managed or provider-owned.
+     *
+     * @tags Auth
+     * @name CreateNeonAuthNewUser
+     * @summary Create new auth user
+     * @request POST:/projects/auth/user
+     * @secure
+     */
+    createNeonAuthNewUser: (data: NeonAuthCreateNewUserRequest, params?: RequestParams) => Promise<AxiosResponse<NeonAuthCreateNewUserResponse, any>>;
+    /**
+     * @description Deletes the auth user for the specified project.
+     *
+     * @tags Auth
+     * @name DeleteNeonAuthUser
+     * @summary Delete auth user
+     * @request DELETE:/projects/{project_id}/auth/users/{auth_user_id}
+     * @secure
+     */
+    deleteNeonAuthUser: (projectId: string, authUserId: string, params?: RequestParams) => Promise<AxiosResponse<void, any>>;
+    /**
+     * @description Transfer ownership of your Neon-managed auth project to your own auth provider account.
+     *
+     * @tags Auth
+     * @name TransferNeonAuthProviderProject
+     * @summary Transfer Neon-managed auth project to your own account
+     * @request POST:/projects/auth/transfer_ownership
+     * @secure
+     */
+    transferNeonAuthProviderProject: (data: NeonAuthTransferAuthProviderProjectRequest, params?: RequestParams) => Promise<AxiosResponse<NeonAuthTransferAuthProviderProjectResponse, any>>;
+    /**
+     * No description
+     *
+     * @tags Auth
+     * @name ListNeonAuthIntegrations
+     * @summary Lists active integrations with auth providers
+     * @request GET:/projects/{project_id}/auth/integrations
+     * @secure
+     */
+    listNeonAuthIntegrations: (projectId: string, params?: RequestParams) => Promise<AxiosResponse<ListNeonAuthIntegrationsResponse, any>>;
+    /**
+     * @description Lists the OAuth providers for the specified project.
+     *
+     * @tags Auth
+     * @name ListNeonAuthOauthProviders
+     * @summary List OAuth providers
+     * @request GET:/projects/{project_id}/auth/oauth_providers
+     * @secure
+     */
+    listNeonAuthOauthProviders: (projectId: string, params?: RequestParams) => Promise<AxiosResponse<ListNeonAuthOauthProvidersResponse, any>>;
+    /**
+     * @description Adds a OAuth provider to the specified project.
+     *
+     * @tags Auth
+     * @name AddNeonAuthOauthProvider
+     * @summary Add a OAuth provider
+     * @request POST:/projects/{project_id}/auth/oauth_providers
+     * @secure
+     */
+    addNeonAuthOauthProvider: (projectId: string, data: NeonAuthAddOAuthProviderRequest, params?: RequestParams) => Promise<AxiosResponse<NeonAuthOauthProvider, any>>;
+    /**
+     * @description Updates a OAuth provider for the specified project.
+     *
+     * @tags Auth
+     * @name UpdateNeonAuthOauthProvider
+     * @summary Update OAuth provider
+     * @request PATCH:/projects/{project_id}/auth/oauth_providers/{oauth_provider_id}
+     * @secure
+     */
+    updateNeonAuthOauthProvider: (projectId: string, oauthProviderId: NeonAuthOauthProviderId, data: NeonAuthUpdateOAuthProviderRequest, params?: RequestParams) => Promise<AxiosResponse<NeonAuthOauthProvider, any>>;
+    /**
+     * @description Deletes a OAuth provider from the specified project.
+     *
+     * @tags Auth
+     * @name DeleteNeonAuthOauthProvider
+     * @summary Delete OAuth provider
+     * @request DELETE:/projects/{project_id}/auth/oauth_providers/{oauth_provider_id}
+     * @secure
+     */
+    deleteNeonAuthOauthProvider: (projectId: string, oauthProviderId: NeonAuthOauthProviderId, params?: RequestParams) => Promise<AxiosResponse<void, any>>;
+    /**
+     * @description Gets the email server configuration for the specified project.
+     *
+     * @tags Auth
+     * @name GetNeonAuthEmailServer
+     * @summary Get email server configuration
+     * @request GET:/projects/{project_id}/auth/email_server
+     * @secure
+     */
+    getNeonAuthEmailServer: (projectId: string, params?: RequestParams) => Promise<AxiosResponse<NeonAuthEmailServerConfig, any>>;
+    /**
+     * @description Updates the email server configuration for the specified project.
+     *
+     * @tags Auth
+     * @name UpdateNeonAuthEmailServer
+     * @summary Update email server configuration
+     * @request PATCH:/projects/{project_id}/auth/email_server
+     * @secure
+     */
+    updateNeonAuthEmailServer: (projectId: string, data: NeonAuthEmailServerConfig, params?: RequestParams) => Promise<AxiosResponse<NeonAuthEmailServerConfig, any>>;
+    /**
+     * No description
+     *
+     * @tags Auth
+     * @name DeleteNeonAuthIntegration
+     * @summary Delete integration with auth provider
+     * @request DELETE:/projects/{project_id}/auth/integration/{auth_provider}
+     * @secure
+     */
+    deleteNeonAuthIntegration: (projectId: string, authProvider: NeonAuthSupportedAuthProvider, params?: RequestParams) => Promise<AxiosResponse<void, any>>;
+    /**
+     * @description Retrieves a connection URI for the specified database. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `database_name` by listing the databases for a branch. You can obtain a `role_name` by listing the roles for a branch.
+     *
+     * @tags Project
+     * @name GetConnectionUri
+     * @summary Retrieve connection URI
+     * @request GET:/projects/{project_id}/connection_uri
+     * @secure
+     */
+    getConnectionUri: ({ projectId, ...query }: GetConnectionUriParams, params?: RequestParams) => Promise<AxiosResponse<ConnectionURIResponse, any>>;
+    /**
+     * @description Creates a branch in the specified project. You can obtain a `project_id` by listing the projects for your Neon account. This method does not require a request body, but you can specify one to create a compute endpoint for the branch or to select a non-default parent branch. By default, the branch is created from the project's default branch with no compute endpoint, and the branch name is auto-generated. To access the branch, you must add an endpoint object. A `read_write` endpoint allows you to perform read and write operations on the branch. Each branch supports one read-write endpoint and multiple read-only endpoints. For related information, see [Manage branches](https://neon.tech/docs/manage/branches/).
+     *
+     * @tags Branch
+     * @name CreateProjectBranch
+     * @summary Create branch
+     * @request POST:/projects/{project_id}/branches
+     * @secure
+     */
+    createProjectBranch: (projectId: string, data?: BranchCreateRequest & AnnotationCreateValueRequest, params?: RequestParams) => Promise<AxiosResponse<BranchResponse & EndpointsResponse & OperationsResponse & RolesResponse & DatabasesResponse & ConnectionURIsOptionalResponse, any>>;
+    /**
+     * @description Retrieves a list of branches for the specified project. You can obtain a `project_id` by listing the projects for your Neon account. Each Neon project has a root branch named `main`. A `branch_id` value has a `br-` prefix. A project may contain child branches that were branched from `main` or from another branch. A parent branch is identified by the `parent_id` value, which is the `id` of the parent branch. For related information, see [Manage branches](https://neon.tech/docs/manage/branches/).
+     *
+     * @tags Branch
+     * @name ListProjectBranches
+     * @summary List branches
+     * @request GET:/projects/{project_id}/branches
+     * @secure
+     */
+    listProjectBranches: ({ projectId, ...query }: ListProjectBranchesParams, params?: RequestParams) => Promise<AxiosResponse<BranchesResponse & AnnotationsMapResponse & CursorPaginationResponse, any>>;
+    /**
+     * @description Retrieves the total number of branches in the specified project. You can obtain a `project_id` by listing the projects for your Neon account.
+     *
+     * @tags Branch
+     * @name CountProjectBranches
+     * @summary Retrieve number of branches
+     * @request GET:/projects/{project_id}/branches/count
+     * @secure
+     */
+    countProjectBranches: ({ projectId, ...query }: CountProjectBranchesParams, params?: RequestParams) => Promise<AxiosResponse<BranchesCountResponse, any>>;
+    /**
+     * @description Retrieves information about the specified branch. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain a `branch_id` by listing the project's branches. A `branch_id` value has a `br-` prefix. Each Neon project is initially created with a root and default branch named `main`. A project can contain one or more branches. A parent branch is identified by a `parent_id` value, which is the `id` of the parent branch. For related information, see [Manage branches](https://neon.tech/docs/manage/branches/).
+     *
+     * @tags Branch
+     * @name GetProjectBranch
+     * @summary Retrieve branch details
+     * @request GET:/projects/{project_id}/branches/{branch_id}
+     * @secure
+     */
+    getProjectBranch: (projectId: string, branchId: string, params?: RequestParams) => Promise<AxiosResponse<BranchResponse & AnnotationResponse, any>>;
+    /**
+     * @description Deletes the specified branch from a project, and places all compute endpoints into an idle state, breaking existing client connections. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain a `branch_id` by listing the project's branches. For related information, see [Manage branches](https://neon.tech/docs/manage/branches/). When a successful response status is received, the compute endpoints are still active, and the branch is not yet deleted from storage. The deletion occurs after all operations finish. You cannot delete a project's root or default branch, and you cannot delete a branch that has a child branch. A project must have at least one branch.
+     *
+     * @tags Branch
+     * @name DeleteProjectBranch
+     * @summary Delete branch
+     * @request DELETE:/projects/{project_id}/branches/{branch_id}
+     * @secure
+     */
+    deleteProjectBranch: (projectId: string, branchId: string, params?: RequestParams) => Promise<AxiosResponse<BranchOperations, any>>;
+    /**
+     * @description Updates the specified branch. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` by listing the project's branches. For more information, see [Manage branches](https://neon.tech/docs/manage/branches/).
+     *
+     * @tags Branch
+     * @name UpdateProjectBranch
+     * @summary Update branch
+     * @request PATCH:/projects/{project_id}/branches/{branch_id}
+     * @secure
+     */
+    updateProjectBranch: (projectId: string, branchId: string, data: BranchUpdateRequest, params?: RequestParams) => Promise<AxiosResponse<BranchOperations, any>>;
+    /**
+     * @description Restores a branch to an earlier state in its own or another branch's history
+     *
+     * @tags Branch
+     * @name RestoreProjectBranch
+     * @summary Restore branch
+     * @request POST:/projects/{project_id}/branches/{branch_id}/restore
+     * @secure
+     */
+    restoreProjectBranch: (projectId: string, branchId: string, data: BranchRestoreRequest, params?: RequestParams) => Promise<AxiosResponse<BranchOperations, any>>;
+    /**
+     * @description Retrieves the schema from the specified database. The `lsn` and `timestamp` values cannot be specified at the same time. If both are omitted, the database schema is retrieved from database's head.
+     *
+     * @tags Branch
+     * @name GetProjectBranchSchema
+     * @summary Retrieve database schema
+     * @request GET:/projects/{project_id}/branches/{branch_id}/schema
+     * @secure
+     */
+    getProjectBranchSchema: ({ projectId, branchId, ...query }: GetProjectBranchSchemaParams, params?: RequestParams) => Promise<AxiosResponse<BranchSchemaResponse, any>>;
+    /**
+     * @description Compares the schema from the specified database with another branch's schema.
+     *
+     * @tags Branch
+     * @name GetProjectBranchSchemaComparison
+     * @summary Compare database schema
+     * @request GET:/projects/{project_id}/branches/{branch_id}/compare_schema
+     * @secure
+     */
+    getProjectBranchSchemaComparison: ({ projectId, branchId, ...query }: GetProjectBranchSchemaComparisonParams, params?: RequestParams) => Promise<AxiosResponse<BranchSchemaCompareResponse, any>>;
+    /**
+     * @description Sets the specified branch as the project's default branch. The default designation is automatically removed from the previous default branch. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` by listing the project's branches. For more information, see [Manage branches](https://neon.tech/docs/manage/branches/).
+     *
+     * @tags Branch
+     * @name SetDefaultProjectBranch
+     * @summary Set branch as default
+     * @request POST:/projects/{project_id}/branches/{branch_id}/set_as_default
+     * @secure
+     */
+    setDefaultProjectBranch: (projectId: string, branchId: string, params?: RequestParams) => Promise<AxiosResponse<BranchOperations, any>>;
+    /**
+     * @description Retrieves a list of compute endpoints for the specified branch. Neon permits only one read-write compute endpoint per branch. A branch can have multiple read-only compute endpoints. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` by listing the project's branches.
+     *
+     * @tags Branch
+     * @name ListProjectBranchEndpoints
+     * @summary List branch endpoints
+     * @request GET:/projects/{project_id}/branches/{branch_id}/endpoints
+     * @secure
+     */
+    listProjectBranchEndpoints: (projectId: string, branchId: string, params?: RequestParams) => Promise<AxiosResponse<EndpointsResponse, any>>;
+    /**
+     * @description Retrieves a list of databases for the specified branch. A branch can have multiple databases. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` by listing the project's branches. For related information, see [Manage databases](https://neon.tech/docs/manage/databases/).
+     *
+     * @tags Branch
+     * @name ListProjectBranchDatabases
+     * @summary List databases
+     * @request GET:/projects/{project_id}/branches/{branch_id}/databases
+     * @secure
+     */
+    listProjectBranchDatabases: (projectId: string, branchId: string, params?: RequestParams) => Promise<AxiosResponse<DatabasesResponse, any>>;
+    /**
+     * @description Creates a database in the specified branch. A branch can have multiple databases. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` by listing the project's branches. For related information, see [Manage databases](https://neon.tech/docs/manage/databases/).
+     *
+     * @tags Branch
+     * @name CreateProjectBranchDatabase
+     * @summary Create database
+     * @request POST:/projects/{project_id}/branches/{branch_id}/databases
+     * @secure
+     */
+    createProjectBranchDatabase: (projectId: string, branchId: string, data: DatabaseCreateRequest, params?: RequestParams) => Promise<AxiosResponse<DatabaseOperations, any>>;
+    /**
+     * @description Retrieves information about the specified database. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` and `database_name` by listing the branch's databases. For related information, see [Manage databases](https://neon.tech/docs/manage/databases/).
+     *
+     * @tags Branch
+     * @name GetProjectBranchDatabase
+     * @summary Retrieve database details
+     * @request GET:/projects/{project_id}/branches/{branch_id}/databases/{database_name}
+     * @secure
+     */
+    getProjectBranchDatabase: (projectId: string, branchId: string, databaseName: string, params?: RequestParams) => Promise<AxiosResponse<DatabaseResponse, any>>;
+    /**
+     * @description Updates the specified database in the branch. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` and `database_name` by listing the branch's databases. For related information, see [Manage databases](https://neon.tech/docs/manage/databases/).
+     *
+     * @tags Branch
+     * @name UpdateProjectBranchDatabase
+     * @summary Update database
+     * @request PATCH:/projects/{project_id}/branches/{branch_id}/databases/{database_name}
+     * @secure
+     */
+    updateProjectBranchDatabase: (projectId: string, branchId: string, databaseName: string, data: DatabaseUpdateRequest, params?: RequestParams) => Promise<AxiosResponse<DatabaseOperations, any>>;
+    /**
+     * @description Deletes the specified database from the branch. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` and `database_name` by listing the branch's databases. For related information, see [Manage databases](https://neon.tech/docs/manage/databases/).
+     *
+     * @tags Branch
+     * @name DeleteProjectBranchDatabase
+     * @summary Delete database
+     * @request DELETE:/projects/{project_id}/branches/{branch_id}/databases/{database_name}
+     * @secure
+     */
+    deleteProjectBranchDatabase: (projectId: string, branchId: string, databaseName: string, params?: RequestParams) => Promise<AxiosResponse<DatabaseOperations, any>>;
+    /**
+     * @description Retrieves a list of Postgres roles from the specified branch. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` by listing the project's branches. For related information, see [Manage roles](https://neon.tech/docs/manage/roles/).
+     *
+     * @tags Branch
+     * @name ListProjectBranchRoles
+     * @summary List roles
+     * @request GET:/projects/{project_id}/branches/{branch_id}/roles
+     * @secure
+     */
+    listProjectBranchRoles: (projectId: string, branchId: string, params?: RequestParams) => Promise<AxiosResponse<RolesResponse, any>>;
+    /**
+     * @description Creates a Postgres role in the specified branch. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` by listing the project's branches. For related information, see [Manage roles](https://neon.tech/docs/manage/roles/). Connections established to the active compute endpoint will be dropped. If the compute endpoint is idle, the endpoint becomes active for a short period of time and is suspended afterward.
+     *
+     * @tags Branch
+     * @name CreateProjectBranchRole
+     * @summary Create role
+     * @request POST:/projects/{project_id}/branches/{branch_id}/roles
+     * @secure
+     */
+    createProjectBranchRole: (projectId: string, branchId: string, data: RoleCreateRequest, params?: RequestParams) => Promise<AxiosResponse<RoleOperations, any>>;
+    /**
+     * @description Retrieves details about the specified role. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` by listing the project's branches. You can obtain the `role_name` by listing the roles for a branch. In Neon, the terms "role" and "user" are synonymous. For related information, see [Manage roles](https://neon.tech/docs/manage/roles/).
+     *
+     * @tags Branch
+     * @name GetProjectBranchRole
+     * @summary Retrieve role details
+     * @request GET:/projects/{project_id}/branches/{branch_id}/roles/{role_name}
+     * @secure
+     */
+    getProjectBranchRole: (projectId: string, branchId: string, roleName: string, params?: RequestParams) => Promise<AxiosResponse<RoleResponse, any>>;
+    /**
+     * @description Deletes the specified Postgres role from the branch. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` by listing the project's branches. You can obtain the `role_name` by listing the roles for a branch. For related information, see [Manage roles](https://neon.tech/docs/manage/roles/).
+     *
+     * @tags Branch
+     * @name DeleteProjectBranchRole
+     * @summary Delete role
+     * @request DELETE:/projects/{project_id}/branches/{branch_id}/roles/{role_name}
+     * @secure
+     */
+    deleteProjectBranchRole: (projectId: string, branchId: string, roleName: string, params?: RequestParams) => Promise<AxiosResponse<RoleOperations, any>>;
+    /**
+     * @description Retrieves the password for the specified Postgres role, if possible. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` by listing the project's branches. You can obtain the `role_name` by listing the roles for a branch. For related information, see [Manage roles](https://neon.tech/docs/manage/roles/).
+     *
+     * @tags Branch
+     * @name GetProjectBranchRolePassword
+     * @summary Retrieve role password
+     * @request GET:/projects/{project_id}/branches/{branch_id}/roles/{role_name}/reveal_password
+     * @secure
+     */
+    getProjectBranchRolePassword: (projectId: string, branchId: string, roleName: string, params?: RequestParams) => Promise<AxiosResponse<RolePasswordResponse, any>>;
+    /**
+     * @description Resets the password for the specified Postgres role. Returns a new password and operations. The new password is ready to use when the last operation finishes. The old password remains valid until last operation finishes. Connections to the compute endpoint are dropped. If idle, the compute endpoint becomes active for a short period of time. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain the `branch_id` by listing the project's branches. You can obtain the `role_name` by listing the roles for a branch. For related information, see [Manage roles](https://neon.tech/docs/manage/roles/).
+     *
+     * @tags Branch
+     * @name ResetProjectBranchRolePassword
+     * @summary Reset role password
+     * @request POST:/projects/{project_id}/branches/{branch_id}/roles/{role_name}/reset_password
+     * @secure
+     */
+    resetProjectBranchRolePassword: (projectId: string, branchId: string, roleName: string, params?: RequestParams) => Promise<AxiosResponse<RoleOperations, any>>;
+    /**
+     * @description Lists VPC endpoint restrictions for the specified Neon project.
+     *
+     * @tags Project
+     * @name ListProjectVpcEndpoints
+     * @summary List VPC endpoint restrictions
+     * @request GET:/projects/{project_id}/vpc_endpoints
+     * @secure
+     */
+    listProjectVpcEndpoints: (projectId: string, params?: RequestParams) => Promise<AxiosResponse<VPCEndpointsResponse, any>>;
+    /**
+     * @description Sets or updates a VPC endpoint restriction for a Neon project. When a VPC endpoint restriction is set, the project only accepts connections from the specified VPC. A VPC endpoint can be set as a restriction only after it is assigned to the parent organization of the Neon project.
+     *
+     * @tags Project
+     * @name AssignProjectVpcEndpoint
+     * @summary Set VPC endpoint restriction
+     * @request POST:/projects/{project_id}/vpc_endpoints/{vpc_endpoint_id}
+     * @secure
+     */
+    assignProjectVpcEndpoint: (projectId: string, vpcEndpointId: string, data: VPCEndpointAssignment, params?: RequestParams) => Promise<AxiosResponse<void, any>>;
+    /**
+     * @description Removes the specified VPC endpoint restriction from a Neon project.
+     *
+     * @tags Project
+     * @name DeleteProjectVpcEndpoint
+     * @summary Delete VPC endpoint restriction
+     * @request DELETE:/projects/{project_id}/vpc_endpoints/{vpc_endpoint_id}
+     * @secure
+     */
+    deleteProjectVpcEndpoint: (projectId: string, vpcEndpointId: string, params?: RequestParams) => Promise<AxiosResponse<void, any>>;
+    /**
+     * @description Creates a compute endpoint for the specified branch. An endpoint is a Neon compute instance. There is a maximum of one read-write compute endpoint per branch. If the specified branch already has a read-write compute endpoint, the operation fails. A branch can have multiple read-only compute endpoints. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain `branch_id` by listing the project's branches. A `branch_id` has a `br-` prefix. For supported regions and `region_id` values, see [Regions](https://neon.tech/docs/introduction/regions/). For more information about compute endpoints, see [Manage computes](https://neon.tech/docs/manage/endpoints/).
+     *
+     * @tags Endpoint
+     * @name CreateProjectEndpoint
+     * @summary Create compute endpoint
+     * @request POST:/projects/{project_id}/endpoints
+     * @secure
+     */
+    createProjectEndpoint: (projectId: string, data: EndpointCreateRequest, params?: RequestParams) => Promise<AxiosResponse<EndpointOperations, any>>;
+    /**
+     * @description Retrieves a list of compute endpoints for the specified project. A compute endpoint is a Neon compute instance. You can obtain a `project_id` by listing the projects for your Neon account. For information about compute endpoints, see [Manage computes](https://neon.tech/docs/manage/endpoints/).
+     *
+     * @tags Endpoint
+     * @name ListProjectEndpoints
+     * @summary List compute endpoints
+     * @request GET:/projects/{project_id}/endpoints
+     * @secure
+     */
+    listProjectEndpoints: (projectId: string, params?: RequestParams) => Promise<AxiosResponse<EndpointsResponse, any>>;
+    /**
+     * @description Retrieves information about the specified compute endpoint. A compute endpoint is a Neon compute instance. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain an `endpoint_id` by listing your project's compute endpoints. An `endpoint_id` has an `ep-` prefix. For information about compute endpoints, see [Manage computes](https://neon.tech/docs/manage/endpoints/).
+     *
+     * @tags Endpoint
+     * @name GetProjectEndpoint
+     * @summary Retrieve compute endpoint details
+     * @request GET:/projects/{project_id}/endpoints/{endpoint_id}
+     * @secure
+     */
+    getProjectEndpoint: (projectId: string, endpointId: string, params?: RequestParams) => Promise<AxiosResponse<EndpointResponse, any>>;
+    /**
+     * @description Delete the specified compute endpoint. A compute endpoint is a Neon compute instance. Deleting a compute endpoint drops existing network connections to the compute endpoint. The deletion is completed when last operation in the chain finishes successfully. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain an `endpoint_id` by listing your project's compute endpoints. An `endpoint_id` has an `ep-` prefix. For information about compute endpoints, see [Manage computes](https://neon.tech/docs/manage/endpoints/).
+     *
+     * @tags Endpoint
+     * @name DeleteProjectEndpoint
+     * @summary Delete compute endpoint
+     * @request DELETE:/projects/{project_id}/endpoints/{endpoint_id}
+     * @secure
+     */
+    deleteProjectEndpoint: (projectId: string, endpointId: string, params?: RequestParams) => Promise<AxiosResponse<EndpointOperations, any>>;
+    /**
+     * @description Updates the specified compute endpoint. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain an `endpoint_id` and `branch_id` by listing your project's compute endpoints. An `endpoint_id` has an `ep-` prefix. A `branch_id` has a `br-` prefix. For more information about compute endpoints, see [Manage computes](https://neon.tech/docs/manage/endpoints/). If the returned list of operations is not empty, the compute endpoint is not ready to use. The client must wait for the last operation to finish before using the compute endpoint. If the compute endpoint was idle before the update, it becomes active for a short period of time, and the control plane suspends it again after the update.
+     *
+     * @tags Endpoint
+     * @name UpdateProjectEndpoint
+     * @summary Update compute endpoint
+     * @request PATCH:/projects/{project_id}/endpoints/{endpoint_id}
+     * @secure
+     */
+    updateProjectEndpoint: (projectId: string, endpointId: string, data: EndpointUpdateRequest, params?: RequestParams) => Promise<AxiosResponse<EndpointOperations, any>>;
+    /**
+     * @description Starts a compute endpoint. The compute endpoint is ready to use after the last operation in chain finishes successfully. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain an `endpoint_id` by listing your project's compute endpoints. An `endpoint_id` has an `ep-` prefix. For information about compute endpoints, see [Manage computes](https://neon.tech/docs/manage/endpoints/).
+     *
+     * @tags Endpoint
+     * @name StartProjectEndpoint
+     * @summary Start compute endpoint
+     * @request POST:/projects/{project_id}/endpoints/{endpoint_id}/start
+     * @secure
+     */
+    startProjectEndpoint: (projectId: string, endpointId: string, params?: RequestParams) => Promise<AxiosResponse<EndpointOperations, any>>;
+    /**
+     * @description Suspend the specified compute endpoint You can obtain a `project_id` by listing the projects for your Neon account. You can obtain an `endpoint_id` by listing your project's compute endpoints. An `endpoint_id` has an `ep-` prefix. For information about compute endpoints, see [Manage computes](https://neon.tech/docs/manage/endpoints/).
+     *
+     * @tags Endpoint
+     * @name SuspendProjectEndpoint
+     * @summary Suspend compute endpoint
+     * @request POST:/projects/{project_id}/endpoints/{endpoint_id}/suspend
+     * @secure
+     */
+    suspendProjectEndpoint: (projectId: string, endpointId: string, params?: RequestParams) => Promise<AxiosResponse<EndpointOperations, any>>;
+    /**
+     * @description Restart the specified compute endpoint: suspend immediately followed by start operations. You can obtain a `project_id` by listing the projects for your Neon account. You can obtain an `endpoint_id` by listing your project's compute endpoints. An `endpoint_id` has an `ep-` prefix. For information about compute endpoints, see [Manage computes](https://neon.tech/docs/manage/endpoints/).
+     *
+     * @tags Endpoint
+     * @name RestartProjectEndpoint
+     * @summary Restart compute endpoint
+     * @request POST:/projects/{project_id}/endpoints/{endpoint_id}/restart
+     * @secure
+     */
+    restartProjectEndpoint: (projectId: string, endpointId: string, params?: RequestParams) => Promise<AxiosResponse<EndpointOperations, any>>;
+    /**
+     * @description Retrieves consumption metrics for Scale, Business, and Enterprise plan accounts. History begins at the time of upgrade.
+     *
+     * @tags Consumption
+     * @name GetConsumptionHistoryPerAccount
+     * @summary Retrieve account consumption metrics
+     * @request GET:/consumption_history/account
+     * @secure
+     */
+    getConsumptionHistoryPerAccount: (query: GetConsumptionHistoryPerAccountParams, params?: RequestParams) => Promise<AxiosResponse<ConsumptionHistoryPerAccountResponse, any>>;
+    /**
+     * @description Retrieves consumption metrics for Scale, Business, and Enterprise plan projects. History begins at the time of upgrade. Issuing a call to this API does not wake a project's compute endpoint.
+     *
+     * @tags Consumption
+     * @name GetConsumptionHistoryPerProject
+     * @summary Retrieve project consumption metrics
+     * @request GET:/consumption_history/projects
+     * @secure
+     */
+    getConsumptionHistoryPerProject: (query: GetConsumptionHistoryPerProjectParams, params?: RequestParams) => Promise<AxiosResponse<ConsumptionHistoryPerProjectResponse & PaginationResponse, any>>;
+    /**
+     * @description Retrieves information about the specified organization.
+     *
+     * @tags Organizations
+     * @name GetOrganization
+     * @summary Retrieve organization details
+     * @request GET:/organizations/{org_id}
+     * @secure
+     */
+    getOrganization: (orgId: string, params?: RequestParams) => Promise<AxiosResponse<Organization, any>>;
+    /**
+     * @description Retrieves the API keys for the specified organization. The response does not include API key tokens. A token is only provided when creating an API key. API keys can also be managed in the Neon Console. For more information, see [Manage API keys](https://neon.tech/docs/manage/api-keys/).
+     *
+     * @tags Organizations
+     * @name ListOrgApiKeys
+     * @summary List organization API keys
+     * @request GET:/organizations/{org_id}/api_keys
+     * @secure
+     */
+    listOrgApiKeys: (orgId: string, params?: RequestParams) => Promise<AxiosResponse<OrgApiKeysListResponseItem[], any>>;
+    /**
+     * @description Creates an API key for the specified organization. The `key_name` is a user-specified name for the key. This method returns an `id` and `key`. The `key` is a randomly generated, 64-bit token required to access the Neon API. API keys can also be managed in the Neon Console. See [Manage API keys](https://neon.tech/docs/manage/api-keys/).
+     *
+     * @tags Organizations
+     * @name CreateOrgApiKey
+     * @summary Create organization API key
+     * @request POST:/organizations/{org_id}/api_keys
+     * @secure
+     */
+    createOrgApiKey: (orgId: string, data: OrgApiKeyCreateRequest, params?: RequestParams) => Promise<AxiosResponse<OrgApiKeyCreateResponse, any>>;
+    /**
+     * @description Revokes the specified organization API key. An API key that is no longer needed can be revoked. This action cannot be reversed. You can obtain `key_id` values by listing the API keys for an organization. API keys can also be managed in the Neon Console. See [Manage API keys](https://neon.tech/docs/manage/api-keys/).
+     *
+     * @tags Organizations
+     * @name RevokeOrgApiKey
+     * @summary Revoke organization API key
+     * @request DELETE:/organizations/{org_id}/api_keys/{key_id}
+     * @secure
+     */
+    revokeOrgApiKey: (orgId: string, keyId: number, params?: RequestParams) => Promise<AxiosResponse<OrgApiKeyRevokeResponse, any>>;
+    /**
+     * @description Retrieves information about the specified organization members.
+     *
+     * @tags Organizations
+     * @name GetOrganizationMembers
+     * @summary Retrieve organization members details
+     * @request GET:/organizations/{org_id}/members
+     * @secure
+     */
+    getOrganizationMembers: (orgId: string, params?: RequestParams) => Promise<AxiosResponse<OrganizationMembersResponse, any>>;
+    /**
+     * @description Retrieves information about the specified organization member.
+     *
+     * @tags Organizations
+     * @name GetOrganizationMember
+     * @summary Retrieve organization member details
+     * @request GET:/organizations/{org_id}/members/{member_id}
+     * @secure
+     */
+    getOrganizationMember: (orgId: string, memberId: string, params?: RequestParams) => Promise<AxiosResponse<Member, any>>;
+    /**
+     * @description Only an admin can perform this action.
+     *
+     * @tags Organizations
+     * @name UpdateOrganizationMember
+     * @summary Update role for organization member
+     * @request PATCH:/organizations/{org_id}/members/{member_id}
+     * @secure
+     */
+    updateOrganizationMember: (orgId: string, memberId: string, data: OrganizationMemberUpdateRequest, params?: RequestParams) => Promise<AxiosResponse<Member, any>>;
+    /**
+     * @description Remove member from the organization. Only an admin of the organization can perform this action. If another admin is being removed, it will not be allows in case it is the only admin left in the organization.
+     *
+     * @tags Organizations
+     * @name RemoveOrganizationMember
+     * @summary Remove member from the organization
+     * @request DELETE:/organizations/{org_id}/members/{member_id}
+     * @secure
+     */
+    removeOrganizationMember: (orgId: string, memberId: string, params?: RequestParams) => Promise<AxiosResponse<object, any>>;
+    /**
+     * @description Retrieves information about extended invitations for the specified organization
+     *
+     * @tags Organizations
+     * @name GetOrganizationInvitations
+     * @summary Retrieve organization invitation details
+     * @request GET:/organizations/{org_id}/invitations
+     * @secure
+     */
+    getOrganizationInvitations: (orgId: string, params?: RequestParams) => Promise<AxiosResponse<OrganizationInvitationsResponse, any>>;
+    /**
+     * @description Creates invitations for a specific organization. If the invited user has an existing account, they automatically join as a member. If they don't yet have an account, they are invited to create one, after which they become a member. Each invited user receives an email notification.
+     *
+     * @tags Organizations
+     * @name CreateOrganizationInvitations
+     * @summary Create organization invitations
+     * @request POST:/organizations/{org_id}/invitations
+     * @secure
+     */
+    createOrganizationInvitations: (orgId: string, data: OrganizationInvitesCreateRequest, params?: RequestParams) => Promise<AxiosResponse<OrganizationInvitationsResponse, any>>;
+    /**
+     * @description Transfers selected projects, identified by their IDs, from your organization to another specified organization.
+     *
+     * @tags Organizations
+     * @name TransferProjectsFromOrgToOrg
+     * @summary Transfer projects between organizations
+     * @request POST:/organizations/{source_org_id}/projects/transfer
+     * @secure
+     */
+    transferProjectsFromOrgToOrg: (sourceOrgId: string, data: TransferProjectsToOrganizationRequest, params?: RequestParams) => Promise<AxiosResponse<object, any>>;
+    /**
+     * @description Retrieves the list of VPC endpoints for the specified Neon organization across all regions.
+     *
+     * @tags Organizations
+     * @name ListOrganizationVpcEndpointsAllRegions
+     * @summary List VPC endpoints across all regions
+     * @request GET:/organizations/{org_id}/vpc/vpc_endpoints
+     * @secure
+     */
+    listOrganizationVpcEndpointsAllRegions: (orgId: string, params?: RequestParams) => Promise<AxiosResponse<VPCEndpointsWithRegionResponse, any>>;
+    /**
+     * @description Retrieves the list of VPC endpoints for the specified Neon organization.
+     *
+     * @tags Organizations
+     * @name ListOrganizationVpcEndpoints
+     * @summary List VPC endpoints
+     * @request GET:/organizations/{org_id}/vpc/region/{region_id}/vpc_endpoints
+     * @secure
+     */
+    listOrganizationVpcEndpoints: (orgId: string, regionId: string, params?: RequestParams) => Promise<AxiosResponse<VPCEndpointsResponse, any>>;
+    /**
+     * @description Retrieves the current state and configuration details of a specified VPC endpoint.
+     *
+     * @tags Organizations
+     * @name GetOrganizationVpcEndpointDetails
+     * @summary Retrieve VPC endpoint details
+     * @request GET:/organizations/{org_id}/vpc/region/{region_id}/vpc_endpoints/{vpc_endpoint_id}
+     * @secure
+     */
+    getOrganizationVpcEndpointDetails: (orgId: string, regionId: string, vpcEndpointId: string, params?: RequestParams) => Promise<AxiosResponse<VPCEndpointDetails, any>>;
+    /**
+     * @description Assigns a VPC endpoint to a Neon organization or updates its existing assignment.
+     *
+     * @tags Organizations
+     * @name AssignOrganizationVpcEndpoint
+     * @summary Assign or update VPC endpoint
+     * @request POST:/organizations/{org_id}/vpc/region/{region_id}/vpc_endpoints/{vpc_endpoint_id}
+     * @secure
+     */
+    assignOrganizationVpcEndpoint: (orgId: string, regionId: string, vpcEndpointId: string, data: VPCEndpointAssignment, params?: RequestParams) => Promise<AxiosResponse<void, any>>;
+    /**
+     * @description Deletes the VPC endpoint from the specified Neon organization. If you delete a VPC endpoint from a Neon organization, that VPC endpoint cannot be added back to the Neon organization.
+     *
+     * @tags Organizations
+     * @name DeleteOrganizationVpcEndpoint
+     * @summary Delete VPC endpoint
+     * @request DELETE:/organizations/{org_id}/vpc/region/{region_id}/vpc_endpoints/{vpc_endpoint_id}
+     * @secure
+     */
+    deleteOrganizationVpcEndpoint: (orgId: string, regionId: string, vpcEndpointId: string, params?: RequestParams) => Promise<AxiosResponse<void, any>>;
+    /**
+     * @description Lists supported Neon regions
+     *
+     * @tags Region
+     * @name GetActiveRegions
+     * @summary List supported regions
+     * @request GET:/regions
+     * @secure
+     */
+    getActiveRegions: (params?: RequestParams) => Promise<AxiosResponse<ActiveRegionsResponse, any>>;
+    /**
+     * @description Retrieves information about the current Neon user account.
+     *
+     * @tags Users
+     * @name GetCurrentUserInfo
+     * @summary Retrieve current user details
+     * @request GET:/users/me
+     * @secure
+     */
+    getCurrentUserInfo: (params?: RequestParams) => Promise<AxiosResponse<CurrentUserInfoResponse, any>>;
+    /**
+     * @description Retrieves information about the current Neon user's organizations
+     *
+     * @tags Users, Organizations
+     * @name GetCurrentUserOrganizations
+     * @summary Retrieve current user organizations list
+     * @request GET:/users/me/organizations
+     * @secure
+     */
+    getCurrentUserOrganizations: (params?: RequestParams) => Promise<AxiosResponse<OrganizationsResponse, any>>;
+    /**
+     * @description Transfers selected projects, identified by their IDs, from your personal account to a specified organization.
+     *
+     * @tags Users
+     * @name TransferProjectsFromUserToOrg
+     * @summary Transfer projects from personal account to organization
+     * @request POST:/users/me/projects/transfer
+     * @secure
+     */
+    transferProjectsFromUserToOrg: (data: TransferProjectsToOrganizationRequest, params?: RequestParams) => Promise<AxiosResponse<object, any>>;
+    /**
+     * @description Returns auth information about the passed credentials. It can refer to an API key, Bearer token or OAuth session.
+     *
+     * @tags Users
+     * @name GetAuthDetails
+     * @summary Get request authentication details
+     * @request GET:/auth
+     * @secure
+     */
+    getAuthDetails: (params?: RequestParams) => Promise<AxiosResponse<AuthDetailsResponse, any>>;
+}
+export {};
